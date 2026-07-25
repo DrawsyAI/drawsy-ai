@@ -1,6 +1,7 @@
 import {
   lazy,
   Suspense,
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -29,6 +30,10 @@ import {
   type DrawsyAgentAccessMode,
   type DrawsyAgentControls,
   type DrawsyAgentMetadata,
+  type DrawsyAgentPreference as AiAgentPreference,
+  type DrawsyConversation as AiConversation,
+  type DrawsyConversationMessage as AiConversationMessage,
+  type DrawsyConversationPreferences as AiConversationPreferences,
   type DrawsyBridgeEvent,
   type DrawsyCanvasContextCapture,
   type DrawsyCanvasContextRequest,
@@ -78,9 +83,7 @@ type DrawsyAIChatProps = {
     expectedCanvasId: string,
     operations: DrawsyCanvasOperations,
   ) => Promise<void>;
-  inspectCanvasLayout: (
-    expectedCanvasId: string,
-  ) => DrawsyCanvasLayoutReport;
+  inspectCanvasLayout: (expectedCanvasId: string) => DrawsyCanvasLayoutReport;
   captureCanvas: (
     expectedCanvasId: string,
     request: DrawsyCanvasContextRequest,
@@ -293,6 +296,103 @@ type TimelineTool = {
 
 type TimelineItem = TimelineMessage | TimelineTool;
 
+type ConversationScope = {
+  kind: "canvas" | "general";
+  canvasId: string | null;
+  canvasName: string | null;
+};
+
+type ActiveConversation = AiConversation & { persisted: boolean };
+
+const emptyAgentPreference = (): AiAgentPreference => ({
+  model: null,
+  modelProvider: null,
+  effort: null,
+  accessMode: null,
+  internetEnabled: null,
+});
+
+const defaultConversationPreferences = (): AiConversationPreferences => ({
+  engine: "codex",
+  codex: emptyAgentPreference(),
+  opencode: emptyAgentPreference(),
+  updatedAt: 0,
+});
+
+const settingsFromPreference = (
+  preference: AiAgentPreference,
+  controls: DrawsyAgentControls,
+) => {
+  const settings: {
+    model?: string;
+    modelProvider?: string;
+    effort?: string;
+    accessMode?: DrawsyAgentAccessMode;
+    internetEnabled?: boolean;
+  } = {};
+  const model = preference.model
+    ? controls.models.find(
+        (option) =>
+          option.model === preference.model &&
+          (!preference.modelProvider ||
+            !option.providerId ||
+            option.providerId === preference.modelProvider),
+      )
+    : null;
+  if (model) {
+    settings.model = model.model;
+    settings.modelProvider = model.providerId;
+    if (
+      preference.effort &&
+      model.efforts.some((effort) => effort.id === preference.effort)
+    ) {
+      settings.effort = preference.effort;
+    }
+  }
+  if (preference.accessMode) {
+    settings.accessMode = preference.accessMode;
+  }
+  if (preference.internetEnabled !== null) {
+    settings.internetEnabled = preference.internetEnabled;
+  }
+  return settings;
+};
+
+const toTimeline = (messages: AiConversationMessage[]): TimelineItem[] =>
+  messages.map((message) => ({
+    kind: "message",
+    id: message.id,
+    role: message.role,
+    text: message.text,
+  }));
+
+const createConversation = (
+  scope: ConversationScope,
+  engine: AgentEngine,
+): ActiveConversation => {
+  const now = Date.now();
+  return {
+    id: crypto.randomUUID(),
+    scope: scope.kind,
+    canvasId: scope.canvasId,
+    canvasName: scope.canvasName,
+    engine,
+    title: "New conversation",
+    createdAt: now,
+    updatedAt: now,
+    messageCount: 0,
+    persisted: false,
+  };
+};
+
+const formatHistoryTimestamp = (timestamp: number) =>
+  new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(timestamp);
+
 const toolActivityLabel = (activity: TimelineTool) => {
   const labels =
     activity.tool === "read_current_canvas"
@@ -385,7 +485,12 @@ const toolActivityLabel = (activity: TimelineTool) => {
   return activity.message || labels[activity.status];
 };
 
-type AgentSession = { id: string; token: string; folderName: string };
+type AgentSession = {
+  id: string;
+  token: string;
+  folderName: string;
+  resumed: boolean;
+};
 
 const dataURLToBlob = async (dataURL: string) => {
   const response = await fetch(dataURL);
@@ -757,6 +862,23 @@ export const DrawsyAIChat = ({
 }: DrawsyAIChatProps) => {
   const [draft, setDraft] = useState("");
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
+  const [conversation, setConversation] = useState<ActiveConversation | null>(
+    null,
+  );
+  const [conversationHistory, setConversationHistory] = useState<
+    AiConversation[]
+  >([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historyAttempt, setHistoryAttempt] = useState(0);
+  const [preferencesError, setPreferencesError] = useState<string | null>(null);
+  const [preferencesAttempt, setPreferencesAttempt] = useState(0);
+  const [sessionAttempt, setSessionAttempt] = useState(0);
+  const [preferences, setPreferences] = useState<AiConversationPreferences>(
+    defaultConversationPreferences,
+  );
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const [composerTags, setComposerTags] = useState<ComposerTag[]>([]);
   const [activeTag, setActiveTag] = useState<ActiveTagQuery | null>(null);
   const [engine, setEngine] = useState<AgentEngine>("codex");
@@ -799,12 +921,20 @@ export const DrawsyAIChat = ({
   const [apiKeySaving, setApiKeySaving] = useState(false);
   const [apiKeyError, setApiKeyError] = useState<string | null>(null);
   const engineSwitcherRef = useRef<HTMLDivElement>(null);
+  const historySwitcherRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const composerHighlighterRef = useRef<HTMLDivElement>(null);
   const conversationRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
   const copiedMessageTimerRef = useRef<number | null>(null);
   const sessionRef = useRef<AgentSession | null>(null);
+  const activeConversationRef = useRef<ActiveConversation | null>(null);
+  const preferencesRef = useRef<AiConversationPreferences>(preferences);
+  const confirmedPreferencesRef =
+    useRef<AiConversationPreferences>(preferences);
+  const preferencesWriteRef = useRef<Promise<unknown>>(Promise.resolve());
+  const canvasNameRef = useRef(canvasName);
+  const surfaceNameRef = useRef(surfaceName);
   const onFolderSelectedRef = useRef(onFolderSelected);
   const canvasHandlersRef = useRef({
     readCanvas,
@@ -814,6 +944,9 @@ export const DrawsyAIChat = ({
     replaceCanvasImage,
     attachLivePreview,
   });
+  preferencesRef.current = preferences;
+  canvasNameRef.current = canvasName;
+  surfaceNameRef.current = surfaceName;
 
   useEffect(() => {
     setComposerTags((current) => {
@@ -825,6 +958,142 @@ export const DrawsyAIChat = ({
   useEffect(() => {
     onFolderSelectedRef.current = onFolderSelected;
   }, [onFolderSelected]);
+
+  const conversationScope: ConversationScope =
+    (surfaceKind === "canvas" || surfaceKind === "presentation") && canvasId
+      ? {
+          kind: "canvas",
+          canvasId,
+          canvasName: canvasName || "Untitled",
+        }
+      : { kind: "general", canvasId: null, canvasName: null };
+  const conversationScopeKey = `${conversationScope.kind}:${
+    conversationScope.canvasId || "general"
+  }`;
+  // The surface controls the default-new-chat behavior. The scope controls
+  // only where the optional history picker looks, so all non-canvas surfaces
+  // intentionally share general history without sharing a live conversation.
+  const conversationSurfaceKey = `${surfaceKind}:${
+    surfaceId || canvasId || "drawsy"
+  }`;
+  const conversationId = conversation?.id || null;
+
+  useEffect(() => {
+    let cancelled = false;
+    setPreferencesLoaded(false);
+    setPreferencesError(null);
+    void DrawsyAgentApi.getPreferences()
+      .then(({ preferences: saved }) => {
+        if (!cancelled) {
+          confirmedPreferencesRef.current = saved;
+          setPreferences(saved);
+          setPreferencesLoaded(true);
+        }
+      })
+      .catch((error) => {
+        console.warn("Drawsy local AI preferences could not be loaded", error);
+        if (!cancelled) {
+          setPreferencesError(
+            error instanceof Error
+              ? error.message
+              : "Local AI preferences could not be loaded.",
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [preferencesAttempt]);
+
+  useEffect(() => {
+    if (!preferencesLoaded) {
+      return;
+    }
+    setEngine(preferences.engine);
+    const current = activeConversationRef.current;
+    if (
+      !current ||
+      current.persisted ||
+      current.messageCount > 0 ||
+      current.engine === preferences.engine
+    ) {
+      return;
+    }
+    const fresh = createConversation(conversationScope, preferences.engine);
+    activeConversationRef.current = fresh;
+    setConversation(fresh);
+    // Preferences determine only the initial fresh chat. They never replace a
+    // resumed conversation or its attached agent session.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preferences.engine, preferencesLoaded]);
+
+  useEffect(() => {
+    const defaultEngine = preferencesRef.current.engine;
+    const fresh = createConversation(conversationScope, defaultEngine);
+    setEngine(defaultEngine);
+    activeConversationRef.current = fresh;
+    setConversation(fresh);
+    setTimeline([]);
+    setDraft("");
+    setComposerTags([]);
+    setActiveTag(null);
+    setSlashView(null);
+    setPendingModel(null);
+    setTurnRunning(false);
+    setHistoryOpen(false);
+    onClearContexts();
+    // A navigation is intentionally a new conversation. Resuming is explicit
+    // through the history control, never an accidental carry-over.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationSurfaceKey]);
+
+  useEffect(() => {
+    if (!historyOpen) {
+      return;
+    }
+    let cancelled = false;
+    setHistoryLoading(true);
+    setHistoryError(null);
+    void DrawsyAgentApi.listConversations(
+      conversationScope.kind,
+      conversationScope.canvasId,
+    )
+      .then(({ conversations }) => {
+        if (!cancelled) {
+          setConversationHistory(conversations);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setConversationHistory([]);
+          setHistoryError(
+            error instanceof Error
+              ? error.message
+              : "Conversation history could not be loaded.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setHistoryLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+    // The scope key is the deliberate history boundary. A title change alone
+    // must not fetch a separate history or reset the active conversation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationScopeKey, historyAttempt, historyOpen]);
+
+  useEffect(() => {
+    setConversationHistory([]);
+    setHistoryError(null);
+  }, [conversationScopeKey]);
+
+  useEffect(() => {
+    activeConversationRef.current = conversation;
+  }, [conversation]);
 
   useEffect(() => {
     if (folder && onFolderSelectedRef.current) {
@@ -942,7 +1211,7 @@ export const DrawsyAIChat = ({
   };
 
   useEffect(() => {
-    if (!engineMenuOpen) {
+    if (!engineMenuOpen && !historyOpen) {
       return;
     }
 
@@ -950,10 +1219,14 @@ export const DrawsyAIChat = ({
       if (!engineSwitcherRef.current?.contains(event.target as Node)) {
         setEngineMenuOpen(false);
       }
+      if (!historySwitcherRef.current?.contains(event.target as Node)) {
+        setHistoryOpen(false);
+      }
     };
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setEngineMenuOpen(false);
+        setHistoryOpen(false);
       }
     };
 
@@ -963,10 +1236,49 @@ export const DrawsyAIChat = ({
       document.removeEventListener("pointerdown", closeOnOutsideClick);
       document.removeEventListener("keydown", closeOnEscape);
     };
-  }, [engineMenuOpen]);
+  }, [engineMenuOpen, historyOpen]);
+
+  const savePreferences = useCallback(
+    async (next: AiConversationPreferences) => {
+      preferencesRef.current = next;
+      setPreferences(next);
+      const input = {
+        engine: next.engine,
+        codex: next.codex,
+        opencode: next.opencode,
+      };
+      const write = preferencesWriteRef.current.then(() =>
+        DrawsyAgentApi.updatePreferences(input),
+      );
+      preferencesWriteRef.current = write.catch(() => undefined);
+      try {
+        const { preferences: saved } = await write;
+        confirmedPreferencesRef.current = saved;
+        if (preferencesRef.current === next) {
+          preferencesRef.current = saved;
+          setPreferences(saved);
+        }
+        setPreferencesError(null);
+        return saved;
+      } catch (error) {
+        if (preferencesRef.current === next) {
+          const confirmed = confirmedPreferencesRef.current;
+          preferencesRef.current = confirmed;
+          setPreferences(confirmed);
+        }
+        setPreferencesError(
+          error instanceof Error
+            ? error.message
+            : "Local AI preferences could not be saved.",
+        );
+        throw error;
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
-    if (!folder) {
+    if (!preferencesLoaded || !folder || !conversationId) {
       sessionRef.current = null;
       setSessionStatus("idle");
       setSessionError(null);
@@ -984,10 +1296,54 @@ export const DrawsyAIChat = ({
     setActiveTag(null);
 
     const handleEvent = (event: DrawsyBridgeEvent) => {
+      if (activeConversationRef.current?.id !== conversationId) {
+        return;
+      }
       if (event.type === "session.ready") {
         setAgentMetadata(event.data.agent);
-        setSessionStatus("ready");
-        setSessionError(null);
+        const session = createdSession;
+        if (!session) {
+          setSessionStatus("ready");
+          setSessionError(null);
+          return;
+        }
+        const preference = preferencesRef.current[engine];
+        setSessionStatus("starting");
+        void (async () => {
+          try {
+            const initialControls = await DrawsyAgentApi.getControls(session);
+            const settings = settingsFromPreference(
+              preference,
+              initialControls,
+            );
+            const result = Object.keys(settings).length
+              ? await DrawsyAgentApi.updateSettings(session, settings)
+              : { agent: event.data.agent, controls: initialControls };
+            if (
+              sessionRef.current?.id !== session.id ||
+              activeConversationRef.current?.id !== conversationId
+            ) {
+              return;
+            }
+            setAgentMetadata(result.agent);
+            setControls(result.controls);
+            setSessionStatus("ready");
+            setSessionError(null);
+          } catch (error) {
+            if (
+              sessionRef.current?.id !== session.id ||
+              activeConversationRef.current?.id !== conversationId
+            ) {
+              return;
+            }
+            setSessionStatus("ready");
+            setSessionError(
+              error instanceof Error
+                ? `Saved preferences could not be applied: ${error.message}`
+                : "Saved preferences could not be applied.",
+            );
+          }
+        })();
         return;
       }
       if (event.type === "tool.status") {
@@ -1045,20 +1401,18 @@ export const DrawsyAIChat = ({
         return;
       }
       if (event.type === "assistant.final") {
+        const assistantMessage: TimelineMessage = {
+          kind: "message",
+          id: event.data.itemId,
+          role: "assistant",
+          text: event.data.text,
+        };
         setTimeline((current) => {
           const index = current.findIndex(
             (item) => item.kind === "message" && item.id === event.data.itemId,
           );
           if (index < 0) {
-            return [
-              ...current,
-              {
-                kind: "message",
-                id: event.data.itemId,
-                role: "assistant",
-                text: event.data.text,
-              },
-            ];
+            return [...current, assistantMessage];
           }
           const next = [...current];
           next[index] = {
@@ -1185,17 +1539,35 @@ export const DrawsyAIChat = ({
     void DrawsyAgentApi.createSession({
       selectionId: folder.selectionId,
       engine,
+      conversationId,
       canvasId,
-      canvasName: canvasName || "Untitled",
+      canvasName: canvasNameRef.current || "Untitled",
       surfaceKind,
       surfaceId,
-      surfaceName,
+      surfaceName: surfaceNameRef.current,
     })
       .then((session) => {
         createdSession = session;
         if (cancelled) {
           return DrawsyAgentApi.closeSession(session);
         }
+        const restoredConversation = {
+          ...session.conversation,
+          persisted: true,
+        };
+        activeConversationRef.current = restoredConversation;
+        setConversation((current) =>
+          current?.id === restoredConversation.id
+            ? restoredConversation
+            : current,
+        );
+        setConversationHistory((current) =>
+          [
+            restoredConversation,
+            ...current.filter((item) => item.id !== restoredConversation.id),
+          ].sort((left, right) => right.updatedAt - left.updatedAt),
+        );
+        setTimeline(toTimeline(session.messages));
         sessionRef.current = session;
         return DrawsyAgentApi.streamEvents(
           session,
@@ -1236,15 +1608,17 @@ export const DrawsyAIChat = ({
     };
   }, [
     canvasId,
-    canvasName,
+    conversationId,
     engine,
     folder,
+    preferencesLoaded,
+    sessionAttempt,
     surfaceId,
     surfaceKind,
-    surfaceName,
   ]);
 
   const selectedEngine = agentEngines.find((option) => option.id === engine)!;
+  const localConnectionError = preferencesError || sessionError;
   const slashQueryOpen =
     draft.startsWith("/") &&
     !draft.slice(1).includes(" ") &&
@@ -1301,8 +1675,15 @@ export const DrawsyAIChat = ({
     setFolderPicking(true);
     setSessionError(null);
     try {
+      const previousFolder = folder;
       const selection = await DrawsyAgentApi.pickFolder();
       setFolder(selection);
+      if (
+        previousFolder &&
+        previousFolder.selectionId !== selection.selectionId
+      ) {
+        beginFreshConversation();
+      }
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Folder selection failed.";
@@ -1312,6 +1693,52 @@ export const DrawsyAIChat = ({
     } finally {
       setFolderPicking(false);
     }
+  };
+
+  const beginFreshConversation = (
+    nextEngine = preferencesRef.current.engine,
+  ) => {
+    const fresh = createConversation(conversationScope, nextEngine);
+    setEngine(nextEngine);
+    activeConversationRef.current = fresh;
+    setConversation(fresh);
+    setTimeline([]);
+    setDraft("");
+    setComposerTags([]);
+    setActiveTag(null);
+    setSlashView(null);
+    setPendingModel(null);
+    setPendingApiKeyProvider(null);
+    setApiKey("");
+    setApiKeyError(null);
+    setHistoryOpen(false);
+    setTurnRunning(false);
+    onClearContexts();
+  };
+
+  const resumeConversation = (summary: AiConversation) => {
+    if (historyLoading) {
+      return;
+    }
+    if (
+      summary.scope !== conversationScope.kind ||
+      summary.canvasId !== conversationScope.canvasId
+    ) {
+      setHistoryError("This conversation belongs to a different history.");
+      return;
+    }
+    const active = { ...summary, persisted: true };
+    activeConversationRef.current = active;
+    setEngine(active.engine);
+    setConversation(active);
+    setTimeline([]);
+    setDraft("");
+    setComposerTags([]);
+    setActiveTag(null);
+    setSlashView(null);
+    setHistoryOpen(false);
+    setTurnRunning(false);
+    onClearContexts();
   };
 
   const submitDraft = async () => {
@@ -1330,6 +1757,45 @@ export const DrawsyAIChat = ({
       return;
     }
     setTurnRunning(true);
+    const activeConversation = activeConversationRef.current;
+    const submittedAt = Date.now();
+    const userMessage: TimelineMessage = {
+      kind: "message",
+      id: crypto.randomUUID(),
+      role: "user",
+      text: message,
+      tags: submittedTags,
+      contexts: submittedContexts.map((capture) => ({
+        id: capture.id,
+        previewDataURL: capture.preview.dataURL,
+        elementCount: capture.elementIds.length,
+        sourceCount: capture.sourceImages.length,
+      })),
+    };
+    setTimeline((current) => [...current, userMessage]);
+    setDraft("");
+    setComposerTags([]);
+    setActiveTag(null);
+    onClearContexts();
+    if (activeConversation) {
+      const updatedConversation = {
+        ...activeConversation,
+        title:
+          activeConversation.messageCount === 0
+            ? message.replace(/\s+/g, " ").trim().slice(0, 96)
+            : activeConversation.title,
+        messageCount: activeConversation.messageCount + 1,
+        updatedAt: submittedAt,
+      };
+      activeConversationRef.current = updatedConversation;
+      setConversation(updatedConversation);
+      setConversationHistory((current) =>
+        [
+          updatedConversation,
+          ...current.filter((item) => item.id !== updatedConversation.id),
+        ].sort((left, right) => right.updatedAt - left.updatedAt),
+      );
+    }
     try {
       const connectorTags = submittedTags.filter(
         (tag): tag is ConnectorComposerTag => tag.kind === "connector",
@@ -1429,26 +1895,6 @@ export const DrawsyAIChat = ({
             }
           : undefined,
       );
-      setTimeline((current) => [
-        ...current,
-        {
-          kind: "message",
-          id: crypto.randomUUID(),
-          role: "user",
-          text: message,
-          tags: submittedTags,
-          contexts: submittedContexts.map((capture) => ({
-            id: capture.id,
-            previewDataURL: capture.preview.dataURL,
-            elementCount: capture.elementIds.length,
-            sourceCount: capture.sourceImages.length,
-          })),
-        },
-      ]);
-      setDraft("");
-      setComposerTags([]);
-      setActiveTag(null);
-      onClearContexts();
     } catch (error) {
       setTurnRunning(false);
       setTimeline((current) => [
@@ -1483,6 +1929,25 @@ export const DrawsyAIChat = ({
       const result = await DrawsyAgentApi.updateSettings(session, settings);
       setAgentMetadata(result.agent);
       setControls(result.controls);
+      const nextPreferences: AiConversationPreferences = {
+        ...preferencesRef.current,
+        [engine]: {
+          model: result.agent.model,
+          modelProvider: result.agent.modelProvider,
+          effort: result.agent.reasoningEffort,
+          accessMode: result.controls.accessMode,
+          internetEnabled: result.controls.internetEnabled,
+        },
+      };
+      try {
+        await savePreferences(nextPreferences);
+      } catch (error) {
+        setControlsError(
+          error instanceof Error
+            ? `Setting applied, but its default could not be saved: ${error.message}`
+            : "Setting applied, but its default could not be saved.",
+        );
+      }
       setSlashView(null);
       setPendingModel(null);
       setDraft("");
@@ -1535,26 +2000,28 @@ export const DrawsyAIChat = ({
   };
 
   const switchEngine = (nextEngine: AgentEngine) => {
+    if (!preferencesLoaded) {
+      setEngineMenuOpen(false);
+      setPreferencesAttempt((attempt) => attempt + 1);
+      return;
+    }
     if (nextEngine === engine) {
       setEngineMenuOpen(false);
       return;
     }
     setEngine(nextEngine);
+    void savePreferences({
+      ...preferencesRef.current,
+      engine: nextEngine,
+    }).catch(() => undefined);
     setEngineMenuOpen(false);
-    setTimeline([]);
-    setDraft("");
-    setComposerTags([]);
-    setActiveTag(null);
-    setSlashView(null);
-    setPendingModel(null);
-    setPendingApiKeyProvider(null);
-    setApiKey("");
-    setApiKeyError(null);
     setControls(null);
     setAgentMetadata(null);
     setSessionError(null);
     setTurnRunning(false);
-    onClearContexts();
+    // Engines do not share a native session. Treat an engine change exactly
+    // like a new chat so a resumed history is never run by the wrong engine.
+    beginFreshConversation(nextEngine);
   };
 
   const addComposerTag = (
@@ -1969,6 +2436,7 @@ export const DrawsyAIChat = ({
               type="button"
               className="drawsy-ai-chat__engine-trigger"
               onClick={() => setEngineMenuOpen((isOpen) => !isOpen)}
+              disabled={!preferencesLoaded}
               aria-haspopup="listbox"
               aria-expanded={engineMenuOpen}
               aria-label={`Agent engine: ${selectedEngine.label}`}
@@ -2012,6 +2480,98 @@ export const DrawsyAIChat = ({
               </div>
             )}
           </div>
+          <div
+            className="drawsy-ai-chat__history-switcher"
+            ref={historySwitcherRef}
+          >
+            <button
+              type="button"
+              className="drawsy-ai-chat__history-trigger"
+              onClick={() => {
+                setEngineMenuOpen(false);
+                setHistoryOpen((isOpen) => !isOpen);
+              }}
+              aria-haspopup="dialog"
+              aria-expanded={historyOpen}
+              aria-label={
+                conversationScope.kind === "canvas"
+                  ? "Open history for this canvas"
+                  : "Open general chat history"
+              }
+              title={
+                conversationScope.kind === "canvas"
+                  ? "History for this canvas"
+                  : "General history"
+              }
+            >
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M3.5 10a6.5 6.5 0 1 0 2-4.68L3.5 7.1M3.5 3.8v3.3h3.3M10 6.1v4.2l2.7 1.6" />
+              </svg>
+            </button>
+            {historyOpen && (
+              <section
+                className="drawsy-ai-chat__history-menu"
+                role="dialog"
+                aria-label={
+                  conversationScope.kind === "canvas"
+                    ? "History for this canvas"
+                    : "General chat history"
+                }
+              >
+                <div className="drawsy-ai-chat__history-list">
+                  {historyLoading ? (
+                    <p className="drawsy-ai-chat__history-state">
+                      Loading history…
+                    </p>
+                  ) : historyError ? (
+                    <div className="drawsy-ai-chat__history-state drawsy-ai-chat__history-state--error">
+                      <span>{historyError}</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setHistoryAttempt((attempt) => attempt + 1)
+                        }
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  ) : conversationHistory.length ? (
+                    conversationHistory.map((summary) => (
+                      <button
+                        type="button"
+                        className="drawsy-ai-chat__history-item"
+                        key={summary.id}
+                        onClick={() => resumeConversation(summary)}
+                        aria-current={
+                          summary.id === conversationId ? "true" : undefined
+                        }
+                      >
+                        <span>{summary.title}</span>
+                        <small>
+                          {formatHistoryTimestamp(summary.updatedAt)}
+                        </small>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="drawsy-ai-chat__history-state">
+                      No saved chats yet.
+                    </p>
+                  )}
+                </div>
+              </section>
+            )}
+          </div>
+          <button
+            type="button"
+            className="drawsy-ai-chat__new-chat"
+            onClick={() => beginFreshConversation()}
+            aria-label="Start a new chat"
+            title="New chat"
+          >
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M10 4v12M4 10h12" />
+            </svg>
+          </button>
           <button
             type="button"
             className="drawsy-ai-chat__close"
@@ -2434,10 +2994,10 @@ export const DrawsyAIChat = ({
         <div className="drawsy-ai-chat__session-meta">
           <span
             className={
-              sessionError ? "drawsy-ai-chat__status--error" : undefined
+              localConnectionError ? "drawsy-ai-chat__status--error" : undefined
             }
           >
-            {sessionError ||
+            {localConnectionError ||
               (sessionStatus === "starting"
                 ? `Starting local ${selectedEngine.label}…`
                 : sessionStatus === "ready" && folder
@@ -2450,9 +3010,24 @@ export const DrawsyAIChat = ({
                   : surfaceKind === "jira"
                   ? `${folder.name} · Jira surface`
                   : `${folder.name} · no Drawsy context`
-                : `Local ${selectedEngine.label} · no internet`)}
+                : "Choose a folder to start")}
           </span>
-          {agentMetadata && !sessionError && (
+          {localConnectionError && (
+            <button
+              type="button"
+              className="drawsy-ai-chat__retry"
+              onClick={() => {
+                if (preferencesError) {
+                  setPreferencesAttempt((attempt) => attempt + 1);
+                } else {
+                  setSessionAttempt((attempt) => attempt + 1);
+                }
+              }}
+            >
+              Retry
+            </button>
+          )}
+          {agentMetadata && !localConnectionError && (
             <span>
               {agentMetadata.model} ·{" "}
               {agentMetadata.reasoningEffort
