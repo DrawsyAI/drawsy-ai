@@ -13,11 +13,7 @@ export type DrawsyCanvasOperations = {
 };
 
 export type DrawsyCanvasLayoutIssue = {
-  kind:
-    | "overlap"
-    | "text_overflow"
-    | "unbound_text"
-    | "connector_collision";
+  kind: "overlap" | "text_overflow" | "unbound_text" | "connector_collision";
   elementIds: string[];
   message: string;
 };
@@ -86,6 +82,42 @@ export type DrawsyAgentMetadata = {
 };
 
 export type DrawsyAgentAccessMode = "workspace" | "readOnly";
+
+export type DrawsyConversationScope = "canvas" | "general";
+export type DrawsyConversationEngine = "codex" | "opencode";
+
+export type DrawsyAgentPreference = {
+  model: string | null;
+  modelProvider: string | null;
+  effort: string | null;
+  accessMode: DrawsyAgentAccessMode | null;
+  internetEnabled: boolean | null;
+};
+
+export type DrawsyConversationPreferences = {
+  engine: DrawsyConversationEngine;
+  codex: DrawsyAgentPreference;
+  opencode: DrawsyAgentPreference;
+  updatedAt: number;
+};
+
+export type DrawsyConversation = {
+  id: string;
+  scope: DrawsyConversationScope;
+  canvasId: string | null;
+  canvasName: string | null;
+  engine: DrawsyConversationEngine;
+  title: string;
+  createdAt: number;
+  updatedAt: number;
+  messageCount: number;
+};
+
+export type DrawsyConversationMessage = {
+  id: string;
+  role: "user" | "assistant";
+  text: string;
+};
 
 export type DrawsyDrawDocument =
   | { exists: false }
@@ -228,6 +260,22 @@ type ApiErrorBody = { error?: { message?: string } };
 const apiBase =
   import.meta.env.VITE_APP_DRAWSY_AGENT_URL || "http://127.0.0.1:3031";
 
+const fetchLocal = async (
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> => {
+  try {
+    return await fetch(input, init);
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error(
+        "Local Drawsy AI is unavailable. Check that the local bridge is running, then retry.",
+      );
+    }
+    throw error;
+  }
+};
+
 const parseResponse = async <T>(response: Response): Promise<T> => {
   const body = (await response.json().catch(() => ({}))) as T & ApiErrorBody;
   if (!response.ok) {
@@ -246,12 +294,12 @@ const parseResponse = async <T>(response: Response): Promise<T> => {
 export const DrawsyAgentApi = {
   pickFolder: async () =>
     parseResponse<{ selectionId: string; name: string }>(
-      await fetch(`${apiBase}/v1/folders/pick`, { method: "POST" }),
+      await fetchLocal(`${apiBase}/v1/folders/pick`, { method: "POST" }),
     ),
 
   readDrawDocument: async (selectionId: string) =>
     parseResponse<DrawsyDrawDocument>(
-      await fetch(
+      await fetchLocal(
         `${apiBase}/v1/folders/${encodeURIComponent(
           selectionId,
         )}/draw-document`,
@@ -260,6 +308,7 @@ export const DrawsyAgentApi = {
 
   createSession: async (input: {
     selectionId: string;
+    conversationId?: string | null;
     engine?: "codex" | "opencode";
     canvasId?: string | null;
     canvasName?: string | null;
@@ -267,20 +316,56 @@ export const DrawsyAgentApi = {
     surfaceId?: string | null;
     surfaceName?: string | null;
   }) =>
-    parseResponse<{ id: string; token: string; folderName: string }>(
-      await fetch(`${apiBase}/v1/sessions`, {
+    parseResponse<{
+      id: string;
+      token: string;
+      folderName: string;
+      resumed: boolean;
+      conversation: DrawsyConversation;
+      messages: DrawsyConversationMessage[];
+    }>(
+      await fetchLocal(`${apiBase}/v1/sessions`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(input),
       }),
     ),
 
+  getPreferences: async () =>
+    parseResponse<{ preferences: DrawsyConversationPreferences }>(
+      await fetchLocal(`${apiBase}/v1/preferences`),
+    ),
+
+  updatePreferences: async (
+    input: Omit<DrawsyConversationPreferences, "updatedAt">,
+  ) =>
+    parseResponse<{ preferences: DrawsyConversationPreferences }>(
+      await fetchLocal(`${apiBase}/v1/preferences`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(input),
+      }),
+    ),
+
+  listConversations: async (
+    scope: DrawsyConversationScope,
+    canvasId?: string | null,
+  ) => {
+    const search = new URLSearchParams({ scope });
+    if (scope === "canvas" && canvasId) {
+      search.set("canvasId", canvasId);
+    }
+    return parseResponse<{ conversations: DrawsyConversation[] }>(
+      await fetchLocal(`${apiBase}/v1/conversations?${search.toString()}`),
+    );
+  },
+
   streamEvents: async (
     session: { id: string; token: string },
     signal: AbortSignal,
     onEvent: (event: DrawsyBridgeEvent) => void,
   ) => {
-    const response = await fetch(
+    const response = await fetchLocal(
       `${apiBase}/v1/sessions/${session.id}/events`,
       {
         headers: { authorization: `Bearer ${session.token}` },
@@ -331,7 +416,7 @@ export const DrawsyAgentApi = {
     resources?: DrawsyResourceTurn,
   ) =>
     parseResponse<{ accepted: true }>(
-      await fetch(`${apiBase}/v1/sessions/${session.id}/turns`, {
+      await fetchLocal(`${apiBase}/v1/sessions/${session.id}/turns`, {
         method: "POST",
         headers: {
           authorization: `Bearer ${session.token}`,
@@ -357,7 +442,7 @@ export const DrawsyAgentApi = {
     },
   ) =>
     parseResponse<{ id: string; mimeType: string }>(
-      await fetch(
+      await fetchLocal(
         `${apiBase}/v1/sessions/${
           session.id
         }/context-assets/${encodeURIComponent(input.captureId)}/${
@@ -376,7 +461,7 @@ export const DrawsyAgentApi = {
 
   getControls: async (session: { id: string; token: string }) =>
     parseResponse<DrawsyAgentControls>(
-      await fetch(`${apiBase}/v1/sessions/${session.id}/controls`, {
+      await fetchLocal(`${apiBase}/v1/sessions/${session.id}/controls`, {
         headers: { authorization: `Bearer ${session.token}` },
       }),
     ),
@@ -395,7 +480,7 @@ export const DrawsyAgentApi = {
       agent: DrawsyAgentMetadata;
       controls: DrawsyAgentControls;
     }>(
-      await fetch(`${apiBase}/v1/sessions/${session.id}/settings`, {
+      await fetchLocal(`${apiBase}/v1/sessions/${session.id}/settings`, {
         method: "POST",
         headers: {
           authorization: `Bearer ${session.token}`,
@@ -417,7 +502,7 @@ export const DrawsyAgentApi = {
       agent: DrawsyAgentMetadata;
       controls: DrawsyAgentControls;
     }>(
-      await fetch(`${apiBase}/v1/sessions/${session.id}/provider-key`, {
+      await fetchLocal(`${apiBase}/v1/sessions/${session.id}/provider-key`, {
         method: "POST",
         headers: {
           authorization: `Bearer ${session.token}`,
@@ -437,18 +522,21 @@ export const DrawsyAgentApi = {
     },
   ) =>
     parseResponse<{ accepted: true }>(
-      await fetch(`${apiBase}/v1/sessions/${session.id}/canvas-responses`, {
-        method: "POST",
-        headers: {
-          authorization: `Bearer ${session.token}`,
-          "content-type": "application/json",
+      await fetchLocal(
+        `${apiBase}/v1/sessions/${session.id}/canvas-responses`,
+        {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${session.token}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify(response),
         },
-        body: JSON.stringify(response),
-      }),
+      ),
     ),
 
   closeSession: async (session: { id: string; token: string }) => {
-    await fetch(`${apiBase}/v1/sessions/${session.id}`, {
+    await fetchLocal(`${apiBase}/v1/sessions/${session.id}`, {
       method: "DELETE",
       headers: { authorization: `Bearer ${session.token}` },
       keepalive: true,
