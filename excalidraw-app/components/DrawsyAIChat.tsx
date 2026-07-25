@@ -385,6 +385,8 @@ const createConversation = (
   };
 };
 
+const drawsyPageClientId = crypto.randomUUID();
+
 const formatHistoryTimestamp = (timestamp: number) =>
   new Intl.DateTimeFormat(undefined, {
     month: "short",
@@ -1048,7 +1050,7 @@ export const DrawsyAIChat = ({
   }, [conversationSurfaceKey]);
 
   useEffect(() => {
-    if (!historyOpen) {
+    if (!historyOpen || conversationScope.kind !== "canvas") {
       return;
     }
     let cancelled = false;
@@ -1288,6 +1290,15 @@ export const DrawsyAIChat = ({
     let cancelled = false;
     const controller = new AbortController();
     let createdSession: AgentSession | null = null;
+    const closeCreatedSession = () => {
+      const session = createdSession;
+      if (!session) {
+        return;
+      }
+      createdSession = null;
+      void DrawsyAgentApi.closeSession(session);
+    };
+    window.addEventListener("pagehide", closeCreatedSession);
     setSessionStatus("starting");
     setSessionError(null);
     setAgentMetadata(null);
@@ -1540,6 +1551,7 @@ export const DrawsyAIChat = ({
       selectionId: folder.selectionId,
       engine,
       conversationId,
+      clientId: drawsyPageClientId,
       canvasId,
       canvasName: canvasNameRef.current || "Untitled",
       surfaceKind,
@@ -1549,6 +1561,7 @@ export const DrawsyAIChat = ({
       .then((session) => {
         createdSession = session;
         if (cancelled) {
+          createdSession = null;
           return DrawsyAgentApi.closeSession(session);
         }
         const restoredConversation = {
@@ -1601,10 +1614,9 @@ export const DrawsyAIChat = ({
     return () => {
       cancelled = true;
       controller.abort();
+      window.removeEventListener("pagehide", closeCreatedSession);
       sessionRef.current = null;
-      if (createdSession) {
-        void DrawsyAgentApi.closeSession(createdSession);
-      }
+      closeCreatedSession();
     };
   }, [
     canvasId,
@@ -2480,87 +2492,77 @@ export const DrawsyAIChat = ({
               </div>
             )}
           </div>
-          <div
-            className="drawsy-ai-chat__history-switcher"
-            ref={historySwitcherRef}
-          >
-            <button
-              type="button"
-              className="drawsy-ai-chat__history-trigger"
-              onClick={() => {
-                setEngineMenuOpen(false);
-                setHistoryOpen((isOpen) => !isOpen);
-              }}
-              aria-haspopup="dialog"
-              aria-expanded={historyOpen}
-              aria-label={
-                conversationScope.kind === "canvas"
-                  ? "Open history for this canvas"
-                  : "Open general chat history"
-              }
-              title={
-                conversationScope.kind === "canvas"
-                  ? "History for this canvas"
-                  : "General history"
-              }
+          {conversationScope.kind === "canvas" && (
+            <div
+              className="drawsy-ai-chat__history-switcher"
+              ref={historySwitcherRef}
             >
-              <svg viewBox="0 0 20 20" aria-hidden="true">
-                <path d="M3.5 10a6.5 6.5 0 1 0 2-4.68L3.5 7.1M3.5 3.8v3.3h3.3M10 6.1v4.2l2.7 1.6" />
-              </svg>
-            </button>
-            {historyOpen && (
-              <section
-                className="drawsy-ai-chat__history-menu"
-                role="dialog"
-                aria-label={
-                  conversationScope.kind === "canvas"
-                    ? "History for this canvas"
-                    : "General chat history"
-                }
+              <button
+                type="button"
+                className="drawsy-ai-chat__history-trigger"
+                onClick={() => {
+                  setEngineMenuOpen(false);
+                  setHistoryOpen((isOpen) => !isOpen);
+                }}
+                aria-haspopup="dialog"
+                aria-expanded={historyOpen}
+                aria-label="Open history for this canvas"
+                title="History for this canvas"
               >
-                <div className="drawsy-ai-chat__history-list">
-                  {historyLoading ? (
-                    <p className="drawsy-ai-chat__history-state">
-                      Loading history…
-                    </p>
-                  ) : historyError ? (
-                    <div className="drawsy-ai-chat__history-state drawsy-ai-chat__history-state--error">
-                      <span>{historyError}</span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setHistoryAttempt((attempt) => attempt + 1)
-                        }
-                      >
-                        Retry
-                      </button>
-                    </div>
-                  ) : conversationHistory.length ? (
-                    conversationHistory.map((summary) => (
-                      <button
-                        type="button"
-                        className="drawsy-ai-chat__history-item"
-                        key={summary.id}
-                        onClick={() => resumeConversation(summary)}
-                        aria-current={
-                          summary.id === conversationId ? "true" : undefined
-                        }
-                      >
-                        <span>{summary.title}</span>
-                        <small>
-                          {formatHistoryTimestamp(summary.updatedAt)}
-                        </small>
-                      </button>
-                    ))
-                  ) : (
-                    <p className="drawsy-ai-chat__history-state">
-                      No saved chats yet.
-                    </p>
-                  )}
-                </div>
-              </section>
-            )}
-          </div>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M3.5 10a6.5 6.5 0 1 0 2-4.68L3.5 7.1M3.5 3.8v3.3h3.3M10 6.1v4.2l2.7 1.6" />
+                </svg>
+              </button>
+              {historyOpen && (
+                <section
+                  className="drawsy-ai-chat__history-menu"
+                  role="dialog"
+                  aria-label="History for this canvas"
+                >
+                  <div className="drawsy-ai-chat__history-list">
+                    {historyLoading ? (
+                      <p className="drawsy-ai-chat__history-state">
+                        Loading history…
+                      </p>
+                    ) : historyError ? (
+                      <div className="drawsy-ai-chat__history-state drawsy-ai-chat__history-state--error">
+                        <span>{historyError}</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setHistoryAttempt((attempt) => attempt + 1)
+                          }
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    ) : conversationHistory.length ? (
+                      conversationHistory.map((summary) => (
+                        <button
+                          type="button"
+                          className="drawsy-ai-chat__history-item"
+                          key={summary.id}
+                          onClick={() => resumeConversation(summary)}
+                          aria-current={
+                            summary.id === conversationId ? "true" : undefined
+                          }
+                        >
+                          <span>{summary.title}</span>
+                          <small>
+                            {formatHistoryTimestamp(summary.updatedAt)}
+                          </small>
+                        </button>
+                      ))
+                    ) : (
+                      <p className="drawsy-ai-chat__history-state">
+                        No saved chats yet.
+                      </p>
+                    )}
+                  </div>
+                </section>
+              )}
+            </div>
+          )}
           <button
             type="button"
             className="drawsy-ai-chat__new-chat"

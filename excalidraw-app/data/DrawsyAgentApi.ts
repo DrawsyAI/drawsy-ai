@@ -309,6 +309,7 @@ export const DrawsyAgentApi = {
   createSession: async (input: {
     selectionId: string;
     conversationId?: string | null;
+    clientId?: string | null;
     engine?: "codex" | "opencode";
     canvasId?: string | null;
     canvasName?: string | null;
