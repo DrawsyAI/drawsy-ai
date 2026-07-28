@@ -4,7 +4,7 @@ import { resolvablePromise } from "@excalidraw/common";
 
 import { Excalidraw } from "../index";
 
-import { getToolbarTools } from "../components/shapes";
+import { findShapeByKey, getToolbarTools } from "../components/shapes";
 
 import { Pointer } from "./helpers/ui";
 import { act, render } from "./test-utils";
@@ -68,15 +68,23 @@ describe("setActiveTool()", () => {
     expect(h.state.activeTool.customType).toBe("comment");
   });
 });
+
 describe("getToolbarTools()", () => {
-  const getToolValues = (preferredSelectionTool: "selection" | "lasso") =>
-    getToolbarTools({
+  const appWithPreferredTool = (
+    preferredSelectionTool: "selection" | "lasso",
+  ) =>
+    ({
       state: {
         preferredSelectionTool: {
           type: preferredSelectionTool,
         },
       },
-    } as AppClassProperties).map((tool) => tool.value);
+    } as AppClassProperties);
+
+  const getToolValues = (preferredSelectionTool: "selection" | "lasso") =>
+    getToolbarTools(appWithPreferredTool(preferredSelectionTool)).map(
+      (tool) => tool.value,
+    );
 
   it("does not include lasso when selection is preferred", () => {
     const toolValues = getToolValues("selection");
@@ -90,5 +98,28 @@ describe("getToolbarTools()", () => {
 
     expect(toolValues.filter((value) => value === "lasso")).toHaveLength(1);
     expect(toolValues.filter((value) => value === "selection")).toHaveLength(0);
+  });
+
+  it("keeps letter shortcuts CapsLock-insensitive", () => {
+    const app = appWithPreferredTool("selection");
+
+    expect(findShapeByKey("V", app)).toBe("selection");
+    expect(findShapeByKey("R", app)).toBe("rectangle");
+    expect(findShapeByKey("X", app)).toBe("freedraw");
+  });
+
+  it("matches autoshape only with Shift+X", () => {
+    const app = appWithPreferredTool("selection");
+
+    expect(findShapeByKey("X", app, true)).toBe("autoshape");
+    expect(findShapeByKey("x", app, true)).toBe("autoshape");
+    expect(findShapeByKey("X", app, false)).toBe("freedraw");
+  });
+
+  it("does not match plain shortcuts while Shift is held", () => {
+    const app = appWithPreferredTool("selection");
+
+    expect(findShapeByKey("R", app, true)).toBeNull();
+    expect(findShapeByKey("V", app, true)).toBeNull();
   });
 });

@@ -103,6 +103,10 @@ const getHints = ({
     return t("hints.embeddable");
   }
 
+  if (activeTool.type === "autoshape") {
+    return t("hints.autoshape");
+  }
+
   if (
     isResizing &&
     lastPointerDownWith === "mouse" &&

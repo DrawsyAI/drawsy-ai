@@ -57,6 +57,7 @@ export const actionFinalize = register<FormData>({
     let newElements = elements;
     const { interactiveCanvas, focusContainer, scene } = app;
     const elementsMap = scene.getNonDeletedElementsMap();
+    const isDrawShapeTool = appState.activeTool.type === "autoshape";
 
     if (data && appState.selectedLinearElement) {
       const { event, sceneCoords } = data;
@@ -165,18 +166,22 @@ export const actionFinalize = register<FormData>({
           appState: {
             ...appState,
             cursorButton: "up",
-            selectedLinearElement: activeToolLocked
-              ? null
-              : {
-                  ...linearElementEditor,
-                  selectedPointsIndices: null,
-                  isEditing: false,
-                  initialState: {
-                    ...linearElementEditor.initialState,
-                    lastClickedPoint: -1,
+            selectedElementIds: isDrawShapeTool
+              ? {}
+              : appState.selectedElementIds,
+            selectedLinearElement:
+              activeToolLocked || isDrawShapeTool
+                ? null
+                : {
+                    ...linearElementEditor,
+                    selectedPointsIndices: null,
+                    isEditing: false,
+                    initialState: {
+                      ...linearElementEditor.initialState,
+                      lastClickedPoint: -1,
+                    },
+                    pointerOffset: { x: 0, y: 0 },
                   },
-                  pointerOffset: { x: 0, y: 0 },
-                },
             selectionElement: null,
             suggestedBinding: null,
             newElement: null,
@@ -191,12 +196,29 @@ export const actionFinalize = register<FormData>({
       focusContainer();
     }
 
+    // clean up pending gesture even if active tool is already not drawShape
+    const hadPendingSketch = app.drawShape.hasPendingGesture();
+    if (hadPendingSketch || isDrawShapeTool) {
+      app.drawShape.finalize();
+      if (hadPendingSketch) {
+        // finalize() inserts the recognized element via app.insertNewElement
+        // — re-read so the returned array includes it (replaceAllElements
+        // would otherwise drop it)
+        newElements = app.scene.getElementsIncludingDeleted();
+      }
+    }
+
     let element: NonDeleted<ExcalidrawElement> | null = null;
     if (appState.multiElement) {
       element = appState.multiElement;
     } else if (
-      appState.newElement?.type === "freedraw" ||
-      isBindingElement(appState.newElement)
+      // the drawShape preview in `newElement` is not a scene element and the
+      // sketch was finalized by app.drawShape.finalize() above — never treat
+      // the preview as an in-progress element here
+      !isDrawShapeTool &&
+      !hadPendingSketch &&
+      (appState.newElement?.type === "freedraw" ||
+        isBindingElement(appState.newElement))
     ) {
       element = appState.newElement;
     } else if (Object.keys(appState.selectedElementIds).length === 1) {
@@ -294,6 +316,13 @@ export const actionFinalize = register<FormData>({
       });
     }
 
+    // the drawShape flow finalizes without a `newElement` (the sketch is
+    // converted separately), so it stays active regardless of `element`
+    const keepActiveTool =
+      appState.activeTool.type === "autoshape" ||
+      ((appState.activeTool.locked ||
+        appState.activeTool.type === "freedraw") &&
+        !!element);
     let selectedLinearElement =
       element && isLinearElement(element)
         ? new LinearElementEditor(element, arrayToMap(newElements)) // To select the linear element when user has finished mutipoint editing
@@ -318,12 +347,7 @@ export const actionFinalize = register<FormData>({
       appState: {
         ...appState,
         cursorButton: "up",
-        activeTool:
-          (appState.activeTool.locked ||
-            appState.activeTool.type === "freedraw") &&
-          element
-            ? appState.activeTool
-            : activeTool,
+        activeTool: keepActiveTool ? appState.activeTool : activeTool,
         activeEmbeddable: null,
         newElement: null,
         selectionElement: null,
@@ -331,17 +355,18 @@ export const actionFinalize = register<FormData>({
         editingTextElement: null,
         suggestedBinding: null,
         frameToHighlight: null,
-        selectedElementIds:
-          element &&
-          !appState.activeTool.locked &&
-          appState.activeTool.type !== "freedraw"
-            ? {
-                ...appState.selectedElementIds,
-                [element.id]: true,
-              }
-            : appState.selectedElementIds,
+        selectedElementIds: isDrawShapeTool
+          ? {}
+          : element &&
+            !appState.activeTool.locked &&
+            appState.activeTool.type !== "freedraw"
+          ? {
+              ...appState.selectedElementIds,
+              [element.id]: true,
+            }
+          : appState.selectedElementIds,
 
-        selectedLinearElement,
+        selectedLinearElement: isDrawShapeTool ? null : selectedLinearElement,
       },
       // TODO: #7348 we should not capture everything, but if we don't, it leads to incosistencies -> revisit
       captureUpdate: CaptureUpdateAction.IMMEDIATELY,

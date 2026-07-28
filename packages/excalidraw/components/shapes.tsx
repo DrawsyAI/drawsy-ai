@@ -8,6 +8,7 @@ import {
   ArrowIcon,
   LineIcon,
   FreedrawIcon,
+  drawShapeToolIcon,
   TextIcon,
   ImageIcon,
   EraserIcon,
@@ -114,6 +115,15 @@ export const SHAPES = [
     fillable: false,
     toolbar: false,
   },
+  {
+    icon: drawShapeToolIcon,
+    value: "autoshape",
+    key: KEYS.X,
+    shiftKey: true,
+    numericKey: null,
+    fillable: false,
+    toolbar: false,
+  },
 ] as const;
 
 export const getToolbarTools = (app: AppClassProperties) => {
@@ -129,14 +139,21 @@ export const getToolbarTools = (app: AppClassProperties) => {
     : SHAPES;
 };
 
-export const findShapeByKey = (key: string, app: AppClassProperties) => {
-  const shape = getToolbarTools(app).find((shape, index) => {
+export const findShapeByKey = (
+  key: string,
+  app: AppClassProperties,
+  shiftKey = false,
+) => {
+  const normalizedKey = key.toLowerCase();
+  const shape = getToolbarTools(app).find((shape) => {
+    const requiresShift = "shiftKey" in shape && shape.shiftKey;
     return (
-      (shape.numericKey != null && key === shape.numericKey.toString()) ||
-      (shape.key &&
-        (typeof shape.key === "string"
-          ? shape.key === key
-          : (shape.key as readonly string[]).includes(key)))
+      shiftKey === requiresShift &&
+      ((shape.numericKey != null && key === shape.numericKey.toString()) ||
+        (shape.key &&
+          (typeof shape.key === "string"
+            ? shape.key === normalizedKey
+            : (shape.key as readonly string[]).includes(normalizedKey))))
     );
   });
   return shape?.value || null;
