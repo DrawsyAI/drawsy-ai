@@ -63,7 +63,11 @@ import {
 
 import "./DefaultItems.scss";
 
-export const LoadScene = () => {
+type DisabledItemOptions = {
+  disabled?: boolean;
+};
+
+export const LoadScene = ({ disabled = false }: DisabledItemOptions = {}) => {
   const { t } = useI18n();
   const actionManager = useExcalidrawActionManager();
   const elements = useExcalidrawElements();
@@ -96,6 +100,7 @@ export const LoadScene = () => {
     <DropdownMenuItem
       icon={LoadIcon}
       onSelect={handleSelect}
+      disabled={disabled}
       data-testid="load-button"
       shortcut={getShortcutFromShortcutName("loadScene")}
       aria-label={t("buttons.load")}
@@ -106,7 +111,9 @@ export const LoadScene = () => {
 };
 LoadScene.displayName = "LoadScene";
 
-export const SaveToActiveFile = () => {
+export const SaveToActiveFile = ({
+  disabled = false,
+}: DisabledItemOptions = {}) => {
   const { t } = useI18n();
   const actionManager = useExcalidrawActionManager();
 
@@ -119,6 +126,7 @@ export const SaveToActiveFile = () => {
       shortcut={getShortcutFromShortcutName("saveScene")}
       data-testid="save-button"
       onSelect={() => actionManager.executeAction(actionSaveToActiveFile)}
+      disabled={disabled}
       icon={save}
       aria-label={`${t("buttons.save")}`}
     >{`${t("buttons.save")}`}</DropdownMenuItem>
@@ -126,7 +134,7 @@ export const SaveToActiveFile = () => {
 };
 SaveToActiveFile.displayName = "SaveToActiveFile";
 
-export const SaveAsImage = () => {
+export const SaveAsImage = ({ disabled = false }: DisabledItemOptions = {}) => {
   const setAppState = useExcalidrawSetAppState();
   const { t } = useI18n();
   return (
@@ -134,6 +142,7 @@ export const SaveAsImage = () => {
       icon={ExportImageIcon}
       data-testid="image-export-button"
       onSelect={() => setAppState({ openDialog: { name: "imageExport" } })}
+      disabled={disabled}
       shortcut={getShortcutFromShortcutName("imageExport")}
       aria-label={t("buttons.exportImage")}
     >
@@ -143,7 +152,9 @@ export const SaveAsImage = () => {
 };
 SaveAsImage.displayName = "SaveAsImage";
 
-export const CommandPalette = (opts?: { className?: string }) => {
+export const CommandPalette = (
+  opts?: DisabledItemOptions & { className?: string },
+) => {
   const setAppState = useExcalidrawSetAppState();
   const { t } = useI18n();
 
@@ -155,6 +166,7 @@ export const CommandPalette = (opts?: { className?: string }) => {
         trackEvent("command_palette", "open", "menu");
         setAppState({ openDialog: { name: "commandPalette" } });
       }}
+      disabled={opts?.disabled}
       shortcut={getShortcutFromShortcutName("commandPalette")}
       aria-label={t("commandPalette.title")}
       className={opts?.className}
@@ -165,7 +177,9 @@ export const CommandPalette = (opts?: { className?: string }) => {
 };
 CommandPalette.displayName = "CommandPalette";
 
-export const SearchMenu = (opts?: { className?: string }) => {
+export const SearchMenu = (
+  opts?: DisabledItemOptions & { className?: string },
+) => {
   const { t } = useI18n();
   const actionManager = useExcalidrawActionManager();
 
@@ -176,6 +190,7 @@ export const SearchMenu = (opts?: { className?: string }) => {
       onSelect={() => {
         actionManager.executeAction(actionToggleSearchMenu);
       }}
+      disabled={opts?.disabled}
       shortcut={getShortcutFromShortcutName("searchMenu")}
       aria-label={t("search.title")}
       className={opts?.className}
@@ -205,7 +220,7 @@ export const Help = () => {
 };
 Help.displayName = "Help";
 
-export const ClearCanvas = () => {
+export const ClearCanvas = ({ disabled = false }: DisabledItemOptions = {}) => {
   const { t } = useI18n();
 
   const setActiveConfirmDialog = useSetAtom(activeConfirmDialogAtom);
@@ -219,6 +234,7 @@ export const ClearCanvas = () => {
     <DropdownMenuItem
       icon={TrashIcon}
       onSelect={() => setActiveConfirmDialog("clearCanvas")}
+      disabled={disabled}
       data-testid="clear-canvas-button"
       aria-label={t("buttons.clearReset")}
     >
@@ -348,7 +364,7 @@ export const ChangeCanvasBackground = () => {
 };
 ChangeCanvasBackground.displayName = "ChangeCanvasBackground";
 
-export const Export = () => {
+export const Export = ({ disabled = false }: DisabledItemOptions = {}) => {
   const { t } = useI18n();
   const setAppState = useExcalidrawSetAppState();
   return (
@@ -357,6 +373,7 @@ export const Export = () => {
       onSelect={() => {
         setAppState({ openDialog: { name: "jsonExport" } });
       }}
+      disabled={disabled}
       data-testid="json-export-button"
       aria-label={t("buttons.export")}
     >
@@ -400,9 +417,11 @@ Socials.displayName = "Socials";
 export const LiveCollaborationTrigger = ({
   onSelect,
   isCollaborating,
+  disabled = false,
 }: {
   onSelect: () => void;
   isCollaborating: boolean;
+  disabled?: boolean;
 }) => {
   const { t } = useI18n();
   return (
@@ -413,6 +432,7 @@ export const LiveCollaborationTrigger = ({
         "active-collab": isCollaborating,
       })}
       onSelect={onSelect}
+      disabled={disabled}
     >
       {t("labels.liveCollaboration")}
     </DropdownMenuItem>

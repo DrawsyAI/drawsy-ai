@@ -100,6 +100,7 @@ export const AppMainMenu: React.FC<{
   onLanguageChange: (language: string) => void;
   addMenu: React.ReactNode;
   header: React.ReactNode;
+  canvasActionsEnabled: boolean;
   auth: {
     status: "loading" | "anonymous" | "authenticated";
     displayName: string | null;
@@ -121,22 +122,33 @@ export const AppMainMenu: React.FC<{
 
   return (
     <MainMenu addMenu={props.addMenu} header={props.header}>
-      <MainMenu.DefaultItems.LoadScene />
-      <MainMenu.DefaultItems.SaveToActiveFile />
-      <MainMenu.DefaultItems.Export />
-      <MainMenu.DefaultItems.SaveAsImage />
+      <MainMenu.DefaultItems.LoadScene disabled={!props.canvasActionsEnabled} />
+      <MainMenu.DefaultItems.SaveToActiveFile
+        disabled={!props.canvasActionsEnabled}
+      />
+      <MainMenu.DefaultItems.Export disabled={!props.canvasActionsEnabled} />
+      <MainMenu.DefaultItems.SaveAsImage
+        disabled={!props.canvasActionsEnabled}
+      />
       {props.isCollabEnabled && (
         <MainMenu.DefaultItems.LiveCollaborationTrigger
           isCollaborating={props.isCollaborating}
           onSelect={() => props.onCollabDialogOpen()}
+          disabled={!props.canvasActionsEnabled}
         />
       )}
 
       <MainMenu.Separator />
-      <MainMenu.DefaultItems.CommandPalette />
-      <MainMenu.DefaultItems.SearchMenu />
+      <MainMenu.DefaultItems.CommandPalette
+        disabled={!props.canvasActionsEnabled}
+      />
+      <MainMenu.DefaultItems.SearchMenu
+        disabled={!props.canvasActionsEnabled}
+      />
       <MainMenu.DefaultItems.Help />
-      <MainMenu.DefaultItems.ClearCanvas />
+      <MainMenu.DefaultItems.ClearCanvas
+        disabled={!props.canvasActionsEnabled}
+      />
 
       <MainMenu.Separator />
       <MainMenu.DefaultItems.Preferences />
@@ -188,7 +200,10 @@ export const AppMainMenu: React.FC<{
         </MainMenu.Sub.Content>
       </MainMenu.Sub>
       <MainMenu.Sub>
-        <MainMenu.Sub.Trigger icon={CanvasStyleIcon}>
+        <MainMenu.Sub.Trigger
+          icon={CanvasStyleIcon}
+          disabled={!props.canvasActionsEnabled}
+        >
           Canvas style
         </MainMenu.Sub.Trigger>
         <MainMenu.Sub.Content className="drawsy-canvas-style-submenu">

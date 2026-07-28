@@ -8,16 +8,17 @@ $verticalBreakpoint: 861px;
 
     .Modal__content {
       height: auto;
-      max-height: 100%;
+      max-height: calc(100% - 2rem);
 
       @media screen and (min-width: $verticalBreakpoint) {
-        max-height: 750px;
-        height: 100%;
+        width: min(680px, calc(100vw - 3rem));
+        height: min(620px, calc(100vh - 3rem));
+        max-height: calc(100vh - 3rem);
       }
 
       .Island {
         height: 100%;
-        padding: 1.5rem;
+        padding: 1rem;
       }
 
       .Dialog__content {
@@ -31,8 +32,8 @@ $verticalBreakpoint: 861px;
       display: flex;
       justify-content: center;
       align-items: center;
-      margin-top: 12px;
-      gap: 1.5rem;
+      margin-top: 8px;
+      gap: 1rem;
     }
 
     .shortcut {
@@ -70,28 +71,35 @@ $verticalBreakpoint: 861px;
     .commands {
       overflow-y: auto;
       box-sizing: border-box;
-      margin-top: 12px;
+      margin-top: 8px;
       color: var(--popup-text-color);
+      scrollbar-gutter: stable;
       user-select: none;
 
       .command-category {
         display: flex;
         flex-direction: column;
-        padding: 12px 0px;
-        margin-right: 0.25rem;
+        padding: 8px 0 10px;
+
+        & + .command-category {
+          border-top: 1px solid var(--dialog-border-color);
+        }
       }
 
       .command-category-title {
-        font-size: 1rem;
-        font-weight: 600;
-        margin-bottom: 6px;
         display: flex;
+        padding: 0 0.5rem;
         align-items: center;
+        margin-bottom: 0.5rem;
+        color: var(--popup-text-color);
+        font-size: 0.75rem;
+        font-weight: 600;
+        opacity: 0.68;
       }
 
       .command-item {
         color: var(--popup-text-color);
-        height: 2.5rem;
+        height: 2.25rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -103,7 +111,7 @@ $verticalBreakpoint: 861px;
         --icon-size: 1rem;
 
         &.command-item-large {
-          height: 2.75rem;
+          height: 2.5rem;
           --icon-size: 1.5rem;
 
           .icon {

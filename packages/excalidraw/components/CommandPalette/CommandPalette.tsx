@@ -51,7 +51,6 @@ import {
   mermaidLogoIcon,
   brainIconThin,
   LibraryIcon,
-  historyCommandIcon,
 } from "../icons";
 
 import { SHAPES } from "../shapes";
@@ -923,21 +922,14 @@ function CommandPaletteInner({
           <div className="command-category">
             <div className="command-category-title">
               {t("commandPalette.recents")}
-              <div
-                className="icon"
-                style={{
-                  marginLeft: "6px",
-                }}
-              >
-                {historyCommandIcon}
-              </div>
             </div>
             <CommandItem
               command={lastUsed}
               isSelected={lastUsed.label === currentCommand?.label}
               onClick={(event) => executeCommand(lastUsed, event)}
               disabled={!isCommandAvailable(lastUsed)}
-              onMouseMove={() => setCurrentCommand(lastUsed)}
+              onMouseEnter={() => setCurrentCommand(lastUsed)}
+              onMouseLeave={() => setCurrentCommand(null)}
               showShortcut={app.editorInterface.formFactor !== "phone"}
               appState={uiAppState}
             />
@@ -955,7 +947,8 @@ function CommandPaletteInner({
                     command={command}
                     isSelected={command.label === currentCommand?.label}
                     onClick={(event) => executeCommand(command, event)}
-                    onMouseMove={() => setCurrentCommand(command)}
+                    onMouseEnter={() => setCurrentCommand(command)}
+                    onMouseLeave={() => setCurrentCommand(null)}
                     showShortcut={app.editorInterface.formFactor !== "phone"}
                     appState={uiAppState}
                     size={category === "Library" ? "large" : "small"}
@@ -993,7 +986,8 @@ const CommandItem = ({
   command,
   isSelected,
   disabled,
-  onMouseMove,
+  onMouseEnter,
+  onMouseLeave,
   onClick,
   showShortcut,
   appState,
@@ -1002,7 +996,8 @@ const CommandItem = ({
   command: CommandPaletteItem;
   isSelected: boolean;
   disabled?: boolean;
-  onMouseMove: () => void;
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
   onClick: (event: React.MouseEvent) => void;
   showShortcut: boolean;
   appState: UIAppState;
@@ -1025,7 +1020,8 @@ const CommandItem = ({
         }
       }}
       onClick={disabled ? noop : onClick}
-      onMouseMove={disabled ? noop : onMouseMove}
+      onMouseEnter={disabled ? noop : onMouseEnter}
+      onMouseLeave={disabled ? noop : onMouseLeave}
       title={disabled ? t("commandPalette.itemNotAvailable") : ""}
     >
       <div className="name">

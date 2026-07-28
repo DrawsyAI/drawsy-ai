@@ -14,14 +14,17 @@ const DropdownMenuSubTrigger = ({
   icon,
   shortcut,
   className,
+  disabled,
 }: {
   children: React.ReactNode;
   icon?: JSX.Element;
   shortcut?: string;
   className?: string;
+  disabled?: boolean;
 }) => {
   return (
     <DropdownMenuPrimitive.SubTrigger
+      disabled={disabled}
       className={`${getDropdownMenuItemClassName(
         className,
       )} dropdown-menu__submenu-trigger`}

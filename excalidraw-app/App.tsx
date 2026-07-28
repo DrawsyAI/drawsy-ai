@@ -52,6 +52,7 @@ import { loadFromBlob } from "@excalidraw/excalidraw/data/blob";
 import { getDataURL } from "@excalidraw/excalidraw/data/blob";
 import { getSelectedElements } from "@excalidraw/excalidraw/scene";
 import { t } from "@excalidraw/excalidraw/i18n";
+import { getShortcutKey } from "@excalidraw/excalidraw/shortcut";
 
 import {
   usersIcon,
@@ -2357,13 +2358,6 @@ const ExcalidrawWrapper = () => {
         drawsyAuth.status !== "authenticated" ||
         !excalidrawAPI
       ) {
-        return;
-      }
-
-      const hasSelectedElements = Object.values(
-        excalidrawAPI.getAppState().selectedElementIds,
-      ).some(Boolean);
-      if (hasSelectedElements) {
         return;
       }
 
@@ -5843,6 +5837,48 @@ const ExcalidrawWrapper = () => {
     setDrawsyContextCaptures([]);
   }, [drawsyCanvasId]);
 
+  const addSelectionToDrawsyContext = useCallback(() => {
+    if (
+      !drawsyCanvasId ||
+      !excalidrawAPI ||
+      drawsyContextCaptureInFlightRef.current
+    ) {
+      return false;
+    }
+
+    const appState = excalidrawAPI.getAppState();
+    const selectedElementIds = Object.keys(appState.selectedElementIds).filter(
+      (id) => appState.selectedElementIds[id],
+    );
+    if (!selectedElementIds.length) {
+      return false;
+    }
+
+    drawsyContextCaptureInFlightRef.current = true;
+    void captureDrawsyCanvas(drawsyCanvasId, {
+      elementIds: selectedElementIds,
+      includeSourceImages: true,
+      maxDimension: 2048,
+    })
+      .then((capture) => {
+        setDrawsyContextCaptures((current) =>
+          [...current, capture].slice(-3),
+        );
+        setDrawsyAIChatOpen(true);
+      })
+      .catch((error) => {
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "The selection could not be attached.",
+        );
+      })
+      .finally(() => {
+        drawsyContextCaptureInFlightRef.current = false;
+      });
+    return true;
+  }, [captureDrawsyCanvas, drawsyCanvasId, excalidrawAPI]);
+
   useEffect(() => {
     const captureSelection = (event: KeyboardEvent) => {
       if (
@@ -5852,9 +5888,7 @@ const ExcalidrawWrapper = () => {
         event.ctrlKey ||
         event.altKey ||
         event.shiftKey ||
-        !drawsyCanvasId ||
-        !excalidrawAPI ||
-        drawsyContextCaptureInFlightRef.current
+        !drawsyCanvasId
       ) {
         return;
       }
@@ -5867,40 +5901,14 @@ const ExcalidrawWrapper = () => {
       ) {
         return;
       }
-      const selectedElementIds = Object.keys(
-        excalidrawAPI.getAppState().selectedElementIds,
-      ).filter((id) => excalidrawAPI.getAppState().selectedElementIds[id]);
-      if (!selectedElementIds.length) {
-        return;
+      if (addSelectionToDrawsyContext()) {
+        event.preventDefault();
+        event.stopPropagation();
       }
-      event.preventDefault();
-      event.stopPropagation();
-      drawsyContextCaptureInFlightRef.current = true;
-      void captureDrawsyCanvas(drawsyCanvasId, {
-        elementIds: selectedElementIds,
-        includeSourceImages: true,
-        maxDimension: 2048,
-      })
-        .then((capture) => {
-          setDrawsyContextCaptures((current) =>
-            [...current, capture].slice(-3),
-          );
-          setDrawsyAIChatOpen(true);
-        })
-        .catch((error) => {
-          setErrorMessage(
-            error instanceof Error
-              ? error.message
-              : "The selection could not be attached.",
-          );
-        })
-        .finally(() => {
-          drawsyContextCaptureInFlightRef.current = false;
-        });
     };
     window.addEventListener("keydown", captureSelection, true);
     return () => window.removeEventListener("keydown", captureSelection, true);
-  }, [captureDrawsyCanvas, drawsyCanvasId, excalidrawAPI]);
+  }, [addSelectionToDrawsyContext, drawsyCanvasId]);
   const comments = useCanvasComments({
     auth: drawsyAuth,
     canvasId:
@@ -7338,6 +7346,9 @@ const ExcalidrawWrapper = () => {
             onCollabDialogOpen={onCollabDialogOpen}
             isCollaborating={isCollaborating}
             isCollabEnabled={!isCollabDisabled}
+            canvasActionsEnabled={
+              !kanbanOpen && !jiraWorkspaceOpen && !connectorsOpen
+            }
             theme={appTheme}
             onThemeChange={setAppTheme}
             language={langCode}
@@ -7946,9 +7957,36 @@ const ExcalidrawWrapper = () => {
           </ErrorDialog>
         )}
 
-        {!jiraWorkspaceOpen && (
+        {!jiraWorkspaceOpen && !kanbanOpen && !connectorsOpen && (
           <CommandPalette
             customCommandPaletteItems={[
+              {
+                label: "Open Drawsy AI",
+                category: DEFAULT_CATEGORIES.app,
+                keywords: ["assistant", "chat", "codex", "opencode"],
+                icon: messageCircleIcon,
+                shortcut: getShortcutKey("CtrlOrCmd+K"),
+                predicate: drawsyAuth.status === "authenticated",
+                perform: () => setDrawsyAIChatOpen(true),
+              },
+              {
+                label: "Add selection to Drawsy context",
+                category: DEFAULT_CATEGORIES.app,
+                keywords: ["attach", "canvas", "selection", "context", "ai"],
+                icon: frameToolIcon,
+                shortcut: "C",
+                predicate: () => {
+                  if (!drawsyCanvasId || !excalidrawAPI) {
+                    return false;
+                  }
+                  return Object.values(
+                    excalidrawAPI.getAppState().selectedElementIds,
+                  ).some(Boolean);
+                },
+                perform: () => {
+                  addSelectionToDrawsyContext();
+                },
+              },
               {
                 label: t("labels.liveCollaboration"),
                 category: DEFAULT_CATEGORIES.app,
