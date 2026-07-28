@@ -20,36 +20,36 @@ import type { JSX } from "react";
 
 const Header = () => (
   <div className="HelpDialog__header">
-    <a
+    <button
+      type="button"
       className="HelpDialog__btn"
-      href="https://docs.excalidraw.com"
-      target="_blank"
-      rel="noopener"
+      title="Documentation is coming soon"
+      disabled
     >
       <div className="HelpDialog__link-icon">{ExternalLinkIcon}</div>
       {t("helpDialog.documentation")}
-    </a>
-    <a
+    </button>
+    <button
+      type="button"
       className="HelpDialog__btn"
-      href="https://plus.excalidraw.com/blog"
-      target="_blank"
-      rel="noopener"
+      title="Blog is coming soon"
+      disabled
     >
       <div className="HelpDialog__link-icon">{ExternalLinkIcon}</div>
       {t("helpDialog.blog")}
-    </a>
+    </button>
     <a
       className="HelpDialog__btn"
-      href="https://github.com/excalidraw/excalidraw/issues"
+      href="https://github.com/adarshnagrikar14/drawsy-ai"
       target="_blank"
       rel="noopener noreferrer"
     >
       <div className="HelpDialog__link-icon">{GithubIcon}</div>
-      {t("helpDialog.github")}
+      Open source on GitHub
     </a>
     <a
       className="HelpDialog__btn"
-      href="https://youtube.com/@excalidraw"
+      href="https://youtu.be/7vtHG71ludE?si=3nduIRiA917RK6zG"
       target="_blank"
       rel="noopener noreferrer"
     >
@@ -60,10 +60,10 @@ const Header = () => (
 );
 
 const Section = (props: { title: string; children: React.ReactNode }) => (
-  <>
+  <section className="HelpDialog__section">
     <h3>{props.title}</h3>
     <div className="HelpDialog__islands-container">{props.children}</div>
-  </>
+  </section>
 );
 
 const ShortcutIsland = (props: {
@@ -142,6 +142,19 @@ export const HelpDialog = ({ onClose }: { onClose?: () => void }) => {
       >
         <Header />
         <Section title={t("helpDialog.shortcuts")}>
+          <ShortcutIsland
+            className="HelpDialog__island--drawsy"
+            caption="Drawsy"
+          >
+            <Shortcut
+              label="Open Drawsy AI"
+              shortcuts={[getShortcutKey("CtrlOrCmd+K")]}
+            />
+            <Shortcut
+              label="Add selection to Drawsy context"
+              shortcuts={["C"]}
+            />
+          </ShortcutIsland>
           <ShortcutIsland
             className="HelpDialog__island--tools"
             caption={t("helpDialog.tools")}
@@ -246,10 +259,6 @@ export const HelpDialog = ({ onClose }: { onClose?: () => void }) => {
             <Shortcut
               label={t("helpDialog.preventBinding")}
               shortcuts={[getShortcutKey("CtrlOrCmd")]}
-            />
-            <Shortcut
-              label={t("toolBar.link")}
-              shortcuts={[getShortcutKey("CtrlOrCmd+K")]}
             />
             <Shortcut
               label={t("toolBar.convertElementType")}
