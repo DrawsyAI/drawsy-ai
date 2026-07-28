@@ -94,8 +94,73 @@ function polygonClose<Point extends LocalPoint | GlobalPoint>(
     : ([...polygon, polygon[0]] as Polygon<Point>);
 }
 
-function polygonIsClosed<Point extends LocalPoint | GlobalPoint>(
-  polygon: Point[],
+export function polygonIsClosed<Point extends LocalPoint | GlobalPoint>(
+  polygon: readonly Point[],
+  tolerance: number = PRECISION,
 ) {
-  return pointsEqual(polygon[0], polygon[polygon.length - 1]);
+  return pointsEqual(polygon[0], polygon[polygon.length - 1], tolerance);
+}
+
+/**
+ * The signed area of a polygon via the shoelace formula. Positive when the
+ * vertices wind counter-clockwise in a y-down coordinate system.
+ *
+ * The polygon may be given open or closed; a closing vertex is ignored.
+ */
+export function polygonSignedArea<Point extends LocalPoint | GlobalPoint>(
+  polygon: readonly Point[],
+): number {
+  const pts = polygonIsClosed(polygon) ? polygon.slice(0, -1) : polygon;
+  let sum = 0;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    sum += pts[j][0] * pts[i][1] - pts[i][0] * pts[j][1];
+  }
+  return sum / 2;
+}
+
+export function polygonArea<Point extends LocalPoint | GlobalPoint>(
+  polygon: readonly Point[],
+): number {
+  return Math.abs(polygonSignedArea(polygon));
+}
+
+/**
+ * The convex hull of a point set via Andrew's monotone chain.
+ *
+ * @returns The hull vertices in counter-clockwise order (y-down), without a
+ * repeated closing vertex.
+ */
+export function convexHull<Point extends LocalPoint | GlobalPoint>(
+  points: readonly Point[],
+): Point[] {
+  if (points.length < 3) {
+    return [...points];
+  }
+
+  const sorted = [...points].sort((a, b) =>
+    a[0] === b[0] ? a[1] - b[1] : a[0] - b[0],
+  );
+
+  // Cross product of OA x OB. Negative means the turn O->A->B is clockwise.
+  const cross = (o: Point, a: Point, b: Point) =>
+    (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+
+  const half = (pts: Point[]) => {
+    const chain: Point[] = [];
+    for (const p of pts) {
+      while (
+        chain.length >= 2 &&
+        cross(chain[chain.length - 2], chain[chain.length - 1], p) <= 0
+      ) {
+        chain.pop();
+      }
+      chain.push(p);
+    }
+    chain.pop(); // shared with the other half's first vertex
+    return chain;
+  };
+
+  const hull = [...half(sorted), ...half([...sorted].reverse())];
+
+  return hull.length >= 3 ? hull : [...points];
 }
