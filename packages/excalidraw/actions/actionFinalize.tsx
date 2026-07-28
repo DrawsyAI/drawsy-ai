@@ -57,7 +57,10 @@ export const actionFinalize = register<FormData>({
     let newElements = elements;
     const { interactiveCanvas, focusContainer, scene } = app;
     const elementsMap = scene.getNonDeletedElementsMap();
-    const isDrawShapeTool = appState.activeTool.type === "autoshape";
+    const isDrawToShapeMode =
+      appState.activeTool.type === "freedraw" && appState.isDrawToShapeEnabled;
+    const hadPendingSketch = app.drawShape.hasPendingGesture();
+    const isDrawToShapeGesture = isDrawToShapeMode || hadPendingSketch;
 
     if (data && appState.selectedLinearElement) {
       const { event, sceneCoords } = data;
@@ -166,11 +169,11 @@ export const actionFinalize = register<FormData>({
           appState: {
             ...appState,
             cursorButton: "up",
-            selectedElementIds: isDrawShapeTool
+            selectedElementIds: isDrawToShapeGesture
               ? {}
               : appState.selectedElementIds,
             selectedLinearElement:
-              activeToolLocked || isDrawShapeTool
+              activeToolLocked || isDrawToShapeGesture
                 ? null
                 : {
                     ...linearElementEditor,
@@ -197,8 +200,7 @@ export const actionFinalize = register<FormData>({
     }
 
     // clean up pending gesture even if active tool is already not drawShape
-    const hadPendingSketch = app.drawShape.hasPendingGesture();
-    if (hadPendingSketch || isDrawShapeTool) {
+    if (hadPendingSketch || isDrawToShapeMode) {
       app.drawShape.finalize();
       if (hadPendingSketch) {
         // finalize() inserts the recognized element via app.insertNewElement
@@ -215,7 +217,7 @@ export const actionFinalize = register<FormData>({
       // the drawShape preview in `newElement` is not a scene element and the
       // sketch was finalized by app.drawShape.finalize() above — never treat
       // the preview as an in-progress element here
-      !isDrawShapeTool &&
+      !isDrawToShapeGesture &&
       !hadPendingSketch &&
       (appState.newElement?.type === "freedraw" ||
         isBindingElement(appState.newElement))
@@ -319,7 +321,7 @@ export const actionFinalize = register<FormData>({
     // the drawShape flow finalizes without a `newElement` (the sketch is
     // converted separately), so it stays active regardless of `element`
     const keepActiveTool =
-      appState.activeTool.type === "autoshape" ||
+      isDrawToShapeGesture ||
       ((appState.activeTool.locked ||
         appState.activeTool.type === "freedraw") &&
         !!element);
@@ -355,7 +357,7 @@ export const actionFinalize = register<FormData>({
         editingTextElement: null,
         suggestedBinding: null,
         frameToHighlight: null,
-        selectedElementIds: isDrawShapeTool
+        selectedElementIds: isDrawToShapeGesture
           ? {}
           : element &&
             !appState.activeTool.locked &&
@@ -366,7 +368,9 @@ export const actionFinalize = register<FormData>({
             }
           : appState.selectedElementIds,
 
-        selectedLinearElement: isDrawShapeTool ? null : selectedLinearElement,
+        selectedLinearElement: isDrawToShapeGesture
+          ? null
+          : selectedLinearElement,
       },
       // TODO: #7348 we should not capture everything, but if we don't, it leads to incosistencies -> revisit
       captureUpdate: CaptureUpdateAction.IMMEDIATELY,

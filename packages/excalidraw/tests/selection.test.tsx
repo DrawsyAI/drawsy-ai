@@ -1346,9 +1346,7 @@ describe("tool locking & selection", () => {
         value !== "eraser" &&
         value !== "arrow" &&
         value !== "hand" &&
-        value !== "laser" &&
-        // no top-level toolbar button (rendered in the extra-tools dropdown)
-        value !== "autoshape"
+        value !== "laser"
       ) {
         const element = UI.createElement(value);
         expect(h.state.selectedElementIds[element.id]).not.toBe(true);

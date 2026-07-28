@@ -156,8 +156,7 @@ export type ToolType =
   | "frame"
   | "magicframe"
   | "embeddable"
-  | "laser"
-  | "autoshape";
+  | "laser";
 
 export type ElementOrToolType = ExcalidrawElementType | ToolType | "custom";
 
@@ -355,6 +354,8 @@ export interface AppState {
   // Pen handling
   penMode: boolean;
   penDetected: boolean;
+  /** Whether Pencil gestures should be recognized and converted into shapes. */
+  isDrawToShapeEnabled: boolean;
 
   exportBackground: boolean;
   exportEmbedScene: boolean;

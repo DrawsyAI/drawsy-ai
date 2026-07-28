@@ -56,6 +56,13 @@ export class AppDrawShape {
     return this.gestureInProgress;
   };
 
+  isEnabled = () => {
+    return (
+      this.app.state.activeTool.type === "freedraw" &&
+      this.app.state.isDrawToShapeEnabled
+    );
+  };
+
   handlePointerDown = (pointerDownState: PointerDownState) => {
     if (this.gestureInProgress) {
       // a stale gesture (e.g. after a missed pointerup) — resolve it before

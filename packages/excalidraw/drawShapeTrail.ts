@@ -72,7 +72,7 @@ export class DrawShapeTrail implements Trail {
   }
 
   start(container: SVGSVGElement) {
-    // Unlike persistent pointer trails, autoshape has nothing to animate
+    // Unlike persistent pointer trails, recognition has nothing to animate
     // while idle. Defer starting the animation controller until a gesture.
     this.container = container;
   }

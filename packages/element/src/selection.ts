@@ -203,7 +203,11 @@ export const getTargetElements = (
   elements: ElementsMapOrArray,
   appState: Pick<
     AppState,
-    "selectedElementIds" | "editingTextElement" | "newElement" | "activeTool"
+    | "selectedElementIds"
+    | "editingTextElement"
+    | "newElement"
+    | "activeTool"
+    | "isDrawToShapeEnabled"
   >,
 ) =>
   appState.editingTextElement
@@ -211,7 +215,10 @@ export const getTargetElements = (
     : // the drawShape recognition preview in `newElement` is not a real
     // in-progress element — targeting it would make the styles panel track
     // whatever shape is currently recognized instead of the tool defaults
-    appState.newElement && appState.activeTool.type !== "autoshape"
+    appState.newElement &&
+      !(
+        appState.activeTool.type === "freedraw" && appState.isDrawToShapeEnabled
+      )
     ? [appState.newElement]
     : getSelectedElements(elements, appState, {
         includeBoundTextElement: true,

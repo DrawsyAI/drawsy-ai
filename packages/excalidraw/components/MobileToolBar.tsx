@@ -6,7 +6,6 @@ import { KEYS, capitalizeString } from "@excalidraw/common";
 import { trackEvent } from "../analytics";
 
 import { t } from "../i18n";
-import { getShortcutKey } from "../shortcut";
 
 import { isHandToolActive } from "../appState";
 
@@ -33,7 +32,6 @@ import {
   EmbedIcon,
   laserPointerToolIcon,
   LassoIcon,
-  drawShapeToolIcon,
   mermaidLogoIcon,
   MagicIcon,
 } from "./icons";
@@ -83,19 +81,6 @@ const LINEAR_ELEMENT_TOOLS = [
   { type: "line", icon: LineIcon, title: capitalizeString(t("toolBar.line")) },
 ] as const;
 
-const DRAWING_TOOLS = [
-  {
-    type: "freedraw",
-    icon: FreedrawIcon,
-    title: capitalizeString(t("toolBar.freedraw")),
-  },
-  {
-    type: "autoshape",
-    icon: drawShapeToolIcon,
-    title: capitalizeString(t("toolBar.autoshape")),
-  },
-] as const;
-
 type MobileToolBarProps = {
   app: AppClassProperties;
   onHandToolToggle: () => void;
@@ -115,9 +100,6 @@ export const MobileToolBar = ({
   const [lastActiveLinearElement, setLastActiveLinearElement] = useState<
     "arrow" | "line"
   >("arrow");
-  const [lastActiveDrawingTool, setLastActiveDrawingTool] = useState<
-    "freedraw" | "autoshape"
-  >(activeTool.type === "autoshape" ? "autoshape" : "freedraw");
 
   // keep lastActiveGenericShape in sync with active tool if user switches via other UI
   useEffect(() => {
@@ -134,12 +116,6 @@ export const MobileToolBar = ({
   useEffect(() => {
     if (activeTool.type === "arrow" || activeTool.type === "line") {
       setLastActiveLinearElement(activeTool.type);
-    }
-  }, [activeTool.type]);
-
-  useEffect(() => {
-    if (activeTool.type === "freedraw" || activeTool.type === "autoshape") {
-      setLastActiveDrawingTool(activeTool.type);
     }
   }, [activeTool.type]);
 
@@ -256,30 +232,18 @@ export const MobileToolBar = ({
       />
 
       {/* Free Draw */}
-      <ToolPopover
-        app={app}
-        options={DRAWING_TOOLS}
-        activeTool={activeTool}
-        defaultOption={lastActiveDrawingTool}
-        namePrefix="drawingType"
-        title={capitalizeString(
-          t(
-            lastActiveDrawingTool === "autoshape"
-              ? "toolBar.autoshape"
-              : "toolBar.freedraw",
-          ),
-        )}
+      <ToolButton
+        className={clsx({
+          active: activeTool.type === "freedraw",
+        })}
+        type="radio"
+        icon={FreedrawIcon}
+        checked={activeTool.type === "freedraw"}
+        name="editor-current-shape"
+        title={capitalizeString(t("toolBar.freedraw"))}
+        aria-label={capitalizeString(t("toolBar.freedraw"))}
         data-testid="toolbar-freedraw"
-        onToolChange={(type: string) => {
-          if (type === "freedraw" || type === "autoshape") {
-            setLastActiveDrawingTool(type);
-            app.setActiveTool({ type });
-          }
-        }}
-        displayedOption={
-          DRAWING_TOOLS.find((tool) => tool.type === lastActiveDrawingTool) ||
-          DRAWING_TOOLS[0]
-        }
+        onChange={() => handleToolChange("freedraw")}
       />
 
       {/* Eraser */}
@@ -481,15 +445,6 @@ export const MobileToolBar = ({
             selected={embeddableToolSelected}
           >
             {t("toolBar.embeddable")}
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
-            onSelect={() => app.setActiveTool({ type: "autoshape" })}
-            icon={drawShapeToolIcon}
-            shortcut={getShortcutKey("Shift+X")}
-            data-testid="toolbar-autoshape"
-            selected={activeTool.type === "autoshape"}
-          >
-            {t("toolBar.autoshape")}
           </DropdownMenu.Item>
           <DropdownMenu.Item
             onSelect={() => app.setActiveTool({ type: "laser" })}

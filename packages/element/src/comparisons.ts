@@ -7,8 +7,7 @@ export const hasBackground = (type: ElementOrToolType) =>
   type === "ellipse" ||
   type === "diamond" ||
   type === "line" ||
-  type === "freedraw" ||
-  type === "autoshape";
+  type === "freedraw";
 
 export const hasStrokeColor = (type: ElementOrToolType) =>
   type === "rectangle" ||
@@ -18,8 +17,7 @@ export const hasStrokeColor = (type: ElementOrToolType) =>
   type === "arrow" ||
   type === "line" ||
   type === "text" ||
-  type === "embeddable" ||
-  type === "autoshape";
+  type === "embeddable";
 
 export const hasStrokeWidth = (type: ElementOrToolType) =>
   type === "rectangle" ||
@@ -29,8 +27,7 @@ export const hasStrokeWidth = (type: ElementOrToolType) =>
   type === "diamond" ||
   type === "freedraw" ||
   type === "arrow" ||
-  type === "line" ||
-  type === "autoshape";
+  type === "line";
 
 export const hasStrokeStyle = (type: ElementOrToolType) =>
   type === "rectangle" ||
@@ -39,8 +36,7 @@ export const hasStrokeStyle = (type: ElementOrToolType) =>
   type === "ellipse" ||
   type === "diamond" ||
   type === "arrow" ||
-  type === "line" ||
-  type === "autoshape";
+  type === "line";
 
 export const canChangeRoundness = (type: ElementOrToolType) =>
   type === "rectangle" ||

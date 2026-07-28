@@ -19,7 +19,10 @@ import type { NormalizedZoomValue } from "@excalidraw/excalidraw/types";
 
 import { API } from "../helpers/api";
 import * as restore from "../../data/restore";
-import { getDefaultAppState } from "../../appState";
+import {
+  clearAppStateForLocalStorage,
+  getDefaultAppState,
+} from "../../appState";
 
 import type { ImportedDataState } from "../../data/types";
 
@@ -640,6 +643,17 @@ describe("restoreElements", () => {
 });
 
 describe("restoreAppState", () => {
+  it("persists the Pencil draw-to-shape preference locally", () => {
+    const localAppState = getDefaultAppState();
+    localAppState.isDrawToShapeEnabled = true;
+
+    const storedAppState = clearAppStateForLocalStorage(localAppState);
+    expect(storedAppState.isDrawToShapeEnabled).toBe(true);
+
+    const restoredAppState = restore.restoreAppState(null, storedAppState);
+    expect(restoredAppState.isDrawToShapeEnabled).toBe(true);
+  });
+
   it("when appState is null it should return the local app state property", () => {
     const stubLocalAppState = getDefaultAppState();
     stubLocalAppState.cursorButton = "down";

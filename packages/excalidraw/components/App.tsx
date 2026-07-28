@@ -5082,7 +5082,7 @@ class App extends React.Component<AppProps, AppState> {
         !this.state.selectionElement &&
         !this.state.selectedElementsAreBeingDragged
       ) {
-        const shape = findShapeByKey(event.key, this, event.shiftKey);
+        const shape = findShapeByKey(event.key, this);
 
         if (this.state.viewModeEnabled && !oneOf(shape, ["laser", "hand"])) {
           return;
@@ -5798,7 +5798,7 @@ class App extends React.Component<AppProps, AppState> {
         const elementIdToSelect =
           viaKeyboard &&
           !this.state.activeTool.locked &&
-          this.state.activeTool.type !== "autoshape"
+          !this.drawShape.isEnabled()
             ? element.containerId || (!isDeleted ? element.id : null)
             : null;
 
@@ -5837,10 +5837,7 @@ class App extends React.Component<AppProps, AppState> {
           });
         });
 
-        if (
-          this.state.activeTool.locked ||
-          this.state.activeTool.type === "autoshape"
-        ) {
+        if (this.state.activeTool.locked || this.drawShape.isEnabled()) {
           setCursorForShape(this.interactiveCanvas, this.state);
         }
 
@@ -6460,11 +6457,11 @@ class App extends React.Component<AppProps, AppState> {
     if (this.state.multiElement) {
       return;
     }
-    // Double-click creates or edits text in selection mode and in autoshape
-    // mode, where the drawing tool remains active after text submission.
+    // Double-click creates or edits text in selection mode and while Pencil's
+    // draw-to-shape assistance is enabled.
     if (
       this.state.activeTool.type !== this.state.preferredSelectionTool.type &&
-      this.state.activeTool.type !== "autoshape"
+      !this.drawShape.isEnabled()
     ) {
       return;
     }
@@ -6615,7 +6612,7 @@ class App extends React.Component<AppProps, AppState> {
 
         if (container) {
           if (
-            this.state.activeTool.type === "autoshape" ||
+            this.drawShape.isEnabled() ||
             hasBoundTextElement(container) ||
             !isTransparent(container.backgroundColor) ||
             hitElementItself({
@@ -8111,11 +8108,15 @@ class App extends React.Component<AppProps, AppState> {
         pointerDownState,
       );
     } else if (this.state.activeTool.type === "freedraw") {
-      this.handleFreeDrawElementOnPointerDown(
-        event,
-        this.state.activeTool.type,
-        pointerDownState,
-      );
+      if (this.drawShape.isEnabled()) {
+        this.drawShape.handlePointerDown(pointerDownState);
+      } else {
+        this.handleFreeDrawElementOnPointerDown(
+          event,
+          this.state.activeTool.type,
+          pointerDownState,
+        );
+      }
     } else if (this.state.activeTool.type === "custom") {
       setCursorForShape(this.interactiveCanvas, this.state);
     } else if (
@@ -8131,8 +8132,6 @@ class App extends React.Component<AppProps, AppState> {
         pointerDownState.lastCoords.x,
         pointerDownState.lastCoords.y,
       );
-    } else if (this.state.activeTool.type === "autoshape") {
-      this.drawShape.handlePointerDown(pointerDownState);
     } else if (
       this.state.activeTool.type !== "eraser" &&
       this.state.activeTool.type !== "hand" &&
@@ -10906,10 +10905,7 @@ class App extends React.Component<AppProps, AppState> {
         return;
       }
 
-      if (
-        isLinearElement(newElement) &&
-        this.state.activeTool.type !== "autoshape"
-      ) {
+      if (isLinearElement(newElement) && !this.drawShape.isEnabled()) {
         if (
           newElement!.points.length > 1 &&
           newElement.points[1][0] !== 0 &&
@@ -11611,7 +11607,7 @@ class App extends React.Component<AppProps, AppState> {
         return;
       }
 
-      if (activeTool.type === "autoshape") {
+      if (this.drawShape.hasPendingGesture()) {
         this.actionManager.executeAction(actionFinalize);
         return;
       }

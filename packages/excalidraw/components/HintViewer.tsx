@@ -91,6 +91,10 @@ const getHints = ({
     return t("hints.linearElement");
   }
 
+  if (activeTool.type === "freedraw" && appState.isDrawToShapeEnabled) {
+    return t("hints.drawToShape");
+  }
+
   if (activeTool.type === "freedraw") {
     return t("hints.freeDraw");
   }
@@ -101,10 +105,6 @@ const getHints = ({
 
   if (activeTool.type === "embeddable") {
     return t("hints.embeddable");
-  }
-
-  if (activeTool.type === "autoshape") {
-    return t("hints.autoshape");
   }
 
   if (

@@ -32,14 +32,13 @@ import type {
   NonDeletedSceneElementsMap,
 } from "@excalidraw/element/types";
 
-import { actionToggleZenMode } from "../actions";
+import { actionToggleDrawToShape, actionToggleZenMode } from "../actions";
 
 import { alignActionsPredicate } from "../actions/actionAlign";
 import { trackEvent } from "../analytics";
 import { useTunnels } from "../context/tunnels";
 
 import { t } from "../i18n";
-import { getShortcutKey } from "../shortcut";
 import {
   canChangeRoundness,
   canHaveArrowheads,
@@ -77,7 +76,6 @@ import {
   frameToolIcon,
   mermaidLogoIcon,
   laserPointerToolIcon,
-  drawShapeToolIcon,
   MagicIcon,
   LassoIcon,
   sharpArrowIcon,
@@ -87,7 +85,6 @@ import {
   adjustmentsIcon,
   DotsHorizontalIcon,
   SelectionIcon,
-  FreedrawIcon,
   pencilIcon,
   searchIcon,
   SloppinessArchitectIcon,
@@ -258,22 +255,20 @@ export const SelectedShapeActions = ({
         <>{renderAction("changeArrowhead")}</>
       )}
 
-      {(appState.activeTool.type !== "autoshape" ||
-        targetElements.length > 0) &&
-        renderAction("changeOpacity")}
+      {renderAction("changeOpacity")}
 
-      {(appState.activeTool.type !== "autoshape" ||
-        targetElements.length > 0) && (
-        <fieldset>
-          <legend>{t("labels.layers")}</legend>
-          <div className="buttonList">
-            {renderAction("sendToBack")}
-            {renderAction("sendBackward")}
-            {renderAction("bringForward")}
-            {renderAction("bringToFront")}
-          </div>
-        </fieldset>
-      )}
+      <fieldset>
+        <legend>{t("labels.layers")}</legend>
+        <div className="buttonList">
+          {renderAction("sendToBack")}
+          {renderAction("sendBackward")}
+          {renderAction("bringForward")}
+          {renderAction("bringToFront")}
+        </div>
+      </fieldset>
+
+      {appState.activeTool.type === "freedraw" &&
+        renderAction(actionToggleDrawToShape.name)}
 
       {showAlignActions && !isSingleElementBoundContainer && (
         <fieldset>
@@ -430,9 +425,9 @@ const CombinedShapeProperties = ({
                   canChangeRoundness(element.type),
                 )) &&
                 renderAction("changeRoundness")}
-              {(appState.activeTool.type !== "autoshape" ||
-                targetElements.length > 0) &&
-                renderAction("changeOpacity")}
+              {renderAction("changeOpacity")}
+              {appState.activeTool.type === "freedraw" &&
+                renderAction(actionToggleDrawToShape.name)}
             </div>
           </PropertiesPopover>
         )}
@@ -1188,31 +1183,7 @@ export const ShapesSwitcher = ({
       title: capitalizeString(t("toolBar.lasso")),
     },
   ] as const;
-  const DRAWING_TOOLS = [
-    {
-      type: "freedraw",
-      icon: FreedrawIcon,
-      title: capitalizeString(t("toolBar.freedraw")),
-    },
-    {
-      type: "autoshape",
-      icon: drawShapeToolIcon,
-      title: capitalizeString(t("toolBar.autoshape")),
-    },
-  ] as const;
-
-  const [lastActiveDrawingTool, setLastActiveDrawingTool] = useState<
-    "freedraw" | "autoshape"
-  >(activeTool.type === "autoshape" ? "autoshape" : "freedraw");
-
-  useEffect(() => {
-    if (activeTool.type === "freedraw" || activeTool.type === "autoshape") {
-      setLastActiveDrawingTool(activeTool.type);
-    }
-  }, [activeTool.type]);
-
   const frameToolSelected = activeTool.type === "frame";
-  const drawShapeToolSelected = activeTool.type === "autoshape";
   const laserToolSelected = activeTool.type === "laser";
   const lassoToolSelected =
     isFullStylesPanel &&
@@ -1384,38 +1355,6 @@ export const ShapesSwitcher = ({
                 );
               }
 
-              if (value === "freedraw" && isCompactStylesPanel) {
-                return (
-                  <ToolPopover
-                    key="drawing-popover"
-                    app={app}
-                    options={DRAWING_TOOLS}
-                    activeTool={activeTool}
-                    defaultOption={lastActiveDrawingTool}
-                    namePrefix="drawingType"
-                    title={capitalizeString(
-                      t(
-                        lastActiveDrawingTool === "autoshape"
-                          ? "toolBar.autoshape"
-                          : "toolBar.freedraw",
-                      ),
-                    )}
-                    data-testid="toolbar-freedraw"
-                    onToolChange={(type: string) => {
-                      if (type === "freedraw" || type === "autoshape") {
-                        setLastActiveDrawingTool(type);
-                        app.setActiveTool({ type });
-                      }
-                    }}
-                    displayedOption={
-                      DRAWING_TOOLS.find(
-                        (tool) => tool.type === lastActiveDrawingTool,
-                      ) || DRAWING_TOOLS[0]
-                    }
-                  />
-                );
-              }
-
               return (
                 <ToolButton
                   className={clsx("Shape", { fillable })}
@@ -1468,7 +1407,6 @@ export const ShapesSwitcher = ({
                   "App-toolbar__extra-tools-trigger--selected":
                     frameToolSelected ||
                     embeddableToolSelected ||
-                    (drawShapeToolSelected && isFullStylesPanel) ||
                     lassoToolSelected ||
                     (laserToolSelected && !app.props.isCollaborating),
                 })}
@@ -1482,8 +1420,6 @@ export const ShapesSwitcher = ({
                   ? frameToolIcon
                   : embeddableToolSelected
                   ? EmbedIcon
-                  : drawShapeToolSelected && isFullStylesPanel
-                  ? drawShapeToolIcon
                   : laserToolSelected && !app.props.isCollaborating
                   ? laserPointerToolIcon
                   : lassoToolSelected
@@ -1511,15 +1447,6 @@ export const ShapesSwitcher = ({
                   selected={embeddableToolSelected}
                 >
                   {t("toolBar.embeddable")}
-                </DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onSelect={() => app.setActiveTool({ type: "autoshape" })}
-                  icon={drawShapeToolIcon}
-                  shortcut={getShortcutKey("Shift+X")}
-                  data-testid="toolbar-autoshape"
-                  selected={drawShapeToolSelected}
-                >
-                  {t("toolBar.autoshape")}
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
                   onSelect={() => app.setActiveTool({ type: "laser" })}

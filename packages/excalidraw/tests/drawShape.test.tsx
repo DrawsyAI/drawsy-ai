@@ -12,6 +12,7 @@ import type { ExcalidrawTextElement } from "@excalidraw/element/types";
 import { Excalidraw } from "../index";
 
 import { actionFinalize } from "../actions";
+import { actionToggleDrawToShape } from "../actions/actionToggleDrawToShape";
 import {
   canChangeBackgroundColor,
   canChangeStrokeColor,
@@ -26,6 +27,15 @@ import { GlobalTestState, act, fireEvent, render, waitFor } from "./test-utils";
 const { h } = window;
 
 const mouse = new Pointer("mouse");
+
+const selectPencilWithRecognition = () => {
+  act(() => {
+    h.app.setActiveTool({ type: "freedraw" });
+  });
+  act(() => {
+    h.app.actionManager.executeAction(actionToggleDrawToShape, "ui", true);
+  });
+};
 
 const sketch = (points: [number, number][]) => {
   const [startX, startY] = points[0];
@@ -120,13 +130,11 @@ const circlePath = (
   return points;
 };
 
-describe("autoshape tool", () => {
+describe("Pencil draw-to-shape mode", () => {
   beforeEach(async () => {
     localStorage.clear();
     await render(<Excalidraw handleKeyboardGlobally={true} />);
-    act(() => {
-      h.app.setActiveTool({ type: "autoshape" });
-    });
+    selectPencilWithRecognition();
   });
 
   it("converts a sketched rectangle into a rectangle element", () => {
@@ -143,11 +151,12 @@ describe("autoshape tool", () => {
     expect(h.elements[0].type).toBe("ellipse");
   });
 
-  it("keeps the autoshape tool active after finalizing a shape", () => {
+  it("keeps Pencil active after finalizing a shape", () => {
     sketch(rectanglePath(100, 100, 200, 120));
 
     expect(h.elements).toHaveLength(1);
-    expect(h.state.activeTool.type).toBe("autoshape");
+    expect(h.state.activeTool.type).toBe("freedraw");
+    expect(h.state.isDrawToShapeEnabled).toBe(true);
   });
 
   it("does not select the recognized element, so styles stay tool defaults", () => {
@@ -356,7 +365,7 @@ describe("autoshape tool", () => {
     expect(h.elements).toHaveLength(2);
     expect(h.elements[0].type).toBe("rectangle");
     expect(h.elements[1].type).toBe("ellipse");
-    expect(h.state.activeTool.type).toBe("autoshape");
+    expect(h.state.activeTool.type).toBe("freedraw");
   });
 
   it("ignores a sketch too small to be a shape", () => {
@@ -368,11 +377,11 @@ describe("autoshape tool", () => {
     ]);
 
     expect(h.elements).toHaveLength(0);
-    expect(h.state.activeTool.type).toBe("autoshape");
+    expect(h.state.activeTool.type).toBe("freedraw");
   });
 });
 
-describe("autoshape styles panel & selection (preview path)", () => {
+describe("Pencil draw-to-shape styles panel & selection (preview path)", () => {
   /**
    * Unlike `sketch`, also drives the pointermove handler, so
    * `state.newElement` holds the live recognition preview mid-gesture the way
@@ -395,9 +404,7 @@ describe("autoshape styles panel & selection (preview path)", () => {
   beforeEach(async () => {
     localStorage.clear();
     await render(<Excalidraw handleKeyboardGlobally={true} />);
-    act(() => {
-      h.app.setActiveTool({ type: "autoshape" });
-    });
+    selectPencilWithRecognition();
   });
 
   it("does not select a recognized arrow drawn with a live preview", () => {
@@ -406,7 +413,7 @@ describe("autoshape styles panel & selection (preview path)", () => {
     expect(h.elements.map((element) => element.type)).toEqual(["arrow"]);
     expect(h.state.selectedElementIds).toEqual({});
     expect(h.state.selectedLinearElement).toBeNull();
-    expect(h.state.activeTool.type).toBe("autoshape");
+    expect(h.state.activeTool.type).toBe("freedraw");
   });
 
   it("does not select a recognized rectangle drawn with a live preview", () => {
@@ -477,11 +484,11 @@ describe("autoshape styles panel & selection (preview path)", () => {
     );
     expect(targetElements).toEqual([]);
 
-    // the drawShape panel is limited to stroke color, background, fill style
-    // and stroke style
+    // The panel remains Pencil's panel; recognition does not substitute a
+    // second tool's property controls.
     expect(canChangeStrokeColor(h.state, targetElements)).toBe(true);
     expect(canChangeBackgroundColor(h.state, targetElements)).toBe(true);
-    expect(hasStrokeStyle(h.state.activeTool.type)).toBe(true);
+    expect(hasStrokeStyle(h.state.activeTool.type)).toBe(false);
     expect(hasStrokeWidth(h.state.activeTool.type)).toBe(true);
     expect(canChangeRoundness(h.state.activeTool.type)).toBe(false);
 
@@ -495,7 +502,7 @@ describe("autoshape styles panel & selection (preview path)", () => {
   });
 });
 
-describe("autoshape finalize funnel", () => {
+describe("Pencil draw-to-shape finalize funnel", () => {
   /** starts a gesture and leaves the pointer down */
   const startSketch = (points: [number, number][]) => {
     const [startX, startY] = points[0];
@@ -512,9 +519,7 @@ describe("autoshape finalize funnel", () => {
   beforeEach(async () => {
     localStorage.clear();
     await render(<Excalidraw handleKeyboardGlobally={true} />);
-    act(() => {
-      h.app.setActiveTool({ type: "autoshape" });
-    });
+    selectPencilWithRecognition();
   });
 
   it("commits the pending sketch when actionFinalize fires mid-gesture", () => {
@@ -577,20 +582,18 @@ describe("autoshape finalize funnel", () => {
   });
 });
 
-describe("autoshape double-click to type", () => {
+describe("Pencil draw-to-shape double-click to type", () => {
   beforeEach(async () => {
     localStorage.clear();
     await render(<Excalidraw handleKeyboardGlobally={true} />);
-    act(() => {
-      h.app.setActiveTool({ type: "autoshape" });
-    });
+    selectPencilWithRecognition();
   });
 
-  it("creates free text and stays on autoshape after submit", async () => {
+  it("creates free text and keeps Pencil active after submit", async () => {
     mouse.doubleClickAt(200, 200);
 
     expect(h.state.editingTextElement).not.toBeNull();
-    expect(h.state.activeTool.type).toBe("autoshape");
+    expect(h.state.activeTool.type).toBe("freedraw");
 
     const editor = await getTextEditor();
     updateTextEditor(editor, "hello");
@@ -601,7 +604,7 @@ describe("autoshape double-click to type", () => {
     expect(text.type).toBe("text");
     expect(text.containerId).toBeNull();
     expect(h.state.editingTextElement).toBeNull();
-    expect(h.state.activeTool.type).toBe("autoshape");
+    expect(h.state.activeTool.type).toBe("freedraw");
     expect(API.getSelectedElements()).toHaveLength(0);
   });
 
@@ -631,7 +634,7 @@ describe("autoshape double-click to type", () => {
     expect(h.elements[0].boundElements).toEqual([
       { type: "text", id: text.id },
     ]);
-    expect(h.state.activeTool.type).toBe("autoshape");
+    expect(h.state.activeTool.type).toBe("freedraw");
   });
 
   it("edits existing bound text instead of creating another", async () => {
@@ -697,7 +700,7 @@ describe("autoshape double-click to type", () => {
 
     expect(h.elements.filter((element) => !element.isDeleted)).toHaveLength(1);
     expect(h.elements[0].boundElements ?? []).toHaveLength(0);
-    expect(h.state.activeTool.type).toBe("autoshape");
+    expect(h.state.activeTool.type).toBe("freedraw");
   });
 
   it("undo after submit removes only the text", async () => {
@@ -715,7 +718,7 @@ describe("autoshape double-click to type", () => {
     expect(
       h.elements.filter((element) => !element.isDeleted).map((el) => el.type),
     ).toEqual(["rectangle"]);
-    expect(h.state.activeTool.type).toBe("autoshape");
+    expect(h.state.activeTool.type).toBe("freedraw");
   });
 
   it("starts a sketch while the text editor is open", async () => {
@@ -749,52 +752,89 @@ describe("autoshape double-click to type", () => {
     });
 
     expect(h.state.editingTextElement).not.toBeNull();
-    expect(h.state.activeTool.type).toBe("autoshape");
+    expect(h.state.activeTool.type).toBe("freedraw");
   });
 });
 
-describe("autoshape tool activation", () => {
+describe("Pencil draw-to-shape control", () => {
   beforeEach(async () => {
     localStorage.clear();
     await render(<Excalidraw handleKeyboardGlobally={true} />);
   });
 
-  it("activates via its keyboard shortcut", () => {
-    expect(h.state.activeTool.type).toBe("selection");
-
-    Keyboard.withModifierKeys({ shift: true }, () => {
-      Keyboard.keyPress(KEYS.X);
-    });
-
-    expect(h.state.activeTool.type).toBe("autoshape");
-  });
-
-  it("is not activated by an unmodified X (freedraw's shortcut)", () => {
+  it("keeps Pencil as the selected tool while recognition is toggled", async () => {
     Keyboard.keyPress(KEYS.X);
 
     expect(h.state.activeTool.type).toBe("freedraw");
+    const pencilButton =
+      GlobalTestState.renderResult.container.querySelector<HTMLInputElement>(
+        '[data-testid="toolbar-freedraw"]',
+      )!;
+    expect(pencilButton).toBeChecked();
+
+    const toggle = await waitFor(() => {
+      const input = document.querySelector<HTMLInputElement>(
+        '[name="draw-to-shape-switch"]',
+      );
+      expect(input).not.toBeNull();
+      return input!;
+    });
+    expect(toggle).not.toBeChecked();
+    expect(document.body).toHaveTextContent("Draw to shape");
+    expect(document.body).not.toHaveTextContent(
+      "Recognize clean shapes as you draw",
+    );
+    expect(
+      document.querySelector(
+        '[aria-label="Recognize clean shapes as you draw"]',
+      ),
+    ).not.toBeNull();
+    expect(
+      document.querySelector('[data-testid="toolbar-autoshape"]'),
+    ).toBeNull();
+
+    fireEvent.click(toggle);
+
+    expect(h.state.isDrawToShapeEnabled).toBe(true);
+    expect(h.state.activeTool.type).toBe("freedraw");
+    expect(pencilButton).toBeChecked();
+
+    fireEvent.click(toggle);
+
+    expect(h.state.isDrawToShapeEnabled).toBe(false);
+    expect(h.state.activeTool.type).toBe("freedraw");
+    expect(pencilButton).toBeChecked();
   });
 
-  it("activates from the extra tools dropdown", () => {
-    fireEvent.click(
-      GlobalTestState.renderResult.container.querySelector(
-        ".App-toolbar__extra-tools-trigger",
-      )!,
-    );
+  it("leaves ordinary Pencil behavior untouched while the toggle is off", () => {
+    Keyboard.keyPress(KEYS.X);
 
-    fireEvent.click(
-      document.querySelector<HTMLButtonElement>(
-        '[data-testid="toolbar-autoshape"]',
-      )!,
-    );
+    mouse.downAt(100, 100);
+    mouse.moveTo(180, 130);
+    mouse.upAt(220, 160);
 
-    expect(h.state.activeTool.type).toBe("autoshape");
+    expect(h.state.isDrawToShapeEnabled).toBe(false);
+    expect(h.elements).toHaveLength(1);
+    expect(h.elements[0].type).toBe("freedraw");
+  });
+
+  it("recognizes shapes only after the Pencil toggle is enabled", () => {
+    Keyboard.keyPress(KEYS.X);
+    act(() => {
+      h.app.actionManager.executeAction(actionToggleDrawToShape, "ui", true);
+    });
+
+    sketch(rectanglePath(100, 100, 200, 120));
+
+    expect(h.state.activeTool.type).toBe("freedraw");
+    expect(h.state.isDrawToShapeEnabled).toBe(true);
+    expect(h.elements.map((element) => element.type)).toEqual(["rectangle"]);
   });
 });
 
-describe("autoshape compact toolbar placement", () => {
+describe("Pencil draw-to-shape control on compact layouts", () => {
   it.each(["tablet", "phone"] as const)(
-    "groups autoshape under freedraw on %s",
+    "keeps a single Pencil toolbar tool on %s",
     async (formFactor) => {
       const { container } = await render(
         <Excalidraw UIOptions={{ getFormFactor: () => formFactor }} />,
@@ -804,40 +844,17 @@ describe("autoshape compact toolbar placement", () => {
         expect(h.app.editorInterface.formFactor).toBe(formFactor),
       );
 
-      const freedrawTrigger = container.querySelector(
+      const pencilButton = container.querySelector<HTMLInputElement>(
         '[data-testid="toolbar-freedraw"]',
       )!;
-      fireEvent.pointerDown(freedrawTrigger);
-
-      const drawShapeOption = await waitFor(() => {
-        const option = document.querySelector<HTMLButtonElement>(
-          '.tool-popover-content [data-testid="toolbar-autoshape"]',
-        );
-        expect(option).not.toBeNull();
-        return option!;
-      });
-      fireEvent.click(drawShapeOption);
-      expect(h.state.activeTool.type).toBe("autoshape");
-      expect(freedrawTrigger).toBeChecked();
-
-      const extraToolsTrigger = container.querySelector(
-        ".App-toolbar__extra-tools-trigger",
-      )!;
-      expect(extraToolsTrigger).not.toHaveClass(
-        "App-toolbar__extra-tools-trigger--selected",
-      );
-
-      fireEvent.click(extraToolsTrigger);
-      const extraTools = await waitFor(() => {
-        const menu = document.querySelector(
-          ".App-toolbar__extra-tools-dropdown",
-        );
-        expect(menu).not.toBeNull();
-        return menu!;
-      });
+      expect(pencilButton).not.toBeNull();
       expect(
-        extraTools.querySelector('[data-testid="toolbar-autoshape"]'),
-      ).not.toBeNull();
+        container.querySelector('[data-testid="toolbar-autoshape"]'),
+      ).toBeNull();
+
+      fireEvent.click(pencilButton);
+      expect(h.state.activeTool.type).toBe("freedraw");
+      expect(pencilButton).toBeChecked();
     },
   );
 });
