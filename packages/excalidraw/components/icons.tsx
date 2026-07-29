@@ -1174,6 +1174,32 @@ export const FillSolidIcon = createIcon(
   { ...modifiedTablerIconProps, fill: "currentColor" },
 );
 
+export const FillDotsIcon = createIcon(
+  <>
+    <rect
+      x="2.625"
+      y="2.625"
+      width="14.75"
+      height="14.75"
+      rx="2.284"
+      stroke="currentColor"
+      strokeWidth="1.25"
+    />
+    <g fill="currentColor">
+      <circle cx="6" cy="6" r="1" />
+      <circle cx="10" cy="6" r="1" />
+      <circle cx="14" cy="6" r="1" />
+      <circle cx="6" cy="10" r="1" />
+      <circle cx="10" cy="10" r="1" />
+      <circle cx="14" cy="10" r="1" />
+      <circle cx="6" cy="14" r="1" />
+      <circle cx="10" cy="14" r="1" />
+      <circle cx="14" cy="14" r="1" />
+    </g>
+  </>,
+  modifiedTablerIconProps,
+);
+
 export const StrokeWidthBaseIcon = createIcon(
   <>
     <path

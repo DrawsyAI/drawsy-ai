@@ -56,6 +56,11 @@ describe("element locking", () => {
       });
       const solidFillStyle = queryByTestId(document.body, `fill-solid`);
       expect(solidFillStyle).toHaveClass("active");
+      API.setAppState({
+        currentItemFillStyle: "dots",
+      });
+      const dottedFillStyle = queryByTestId(document.body, `fill-dots`);
+      expect(dottedFillStyle).toHaveClass("active");
     });
 
     it("should not show fill style when background transparent", () => {
