@@ -30,11 +30,11 @@ describe("actionStyles", () => {
   });
 
   it("should copy & paste styles via keyboard", async () => {
-    UI.clickTool("rectangle");
+    UI.clickTool("ellipse");
     mouse.down(10, 10);
     mouse.up(20, 20);
 
-    UI.clickTool("rectangle");
+    UI.clickTool("ellipse");
     mouse.down(10, 10);
     mouse.up(20, 20);
 
@@ -51,6 +51,8 @@ describe("actionStyles", () => {
     fireEvent.click(screen.getByTitle("Dotted"));
     // Roughness
     fireEvent.click(screen.getByTitle("Cartoonist"));
+    // Dimension
+    fireEvent.click(screen.getByTitle("3D"));
     // Opacity
     fireEvent.change(screen.getByTestId("opacity"), {
       target: { value: "60" },
@@ -81,6 +83,7 @@ describe("actionStyles", () => {
     expect(firstRect.strokeWidth).toBe(2); // Bold: 2
     expect(firstRect.strokeStyle).toBe("dotted");
     expect(firstRect.roughness).toBe(2); // Cartoonist: 2
+    expect(firstRect.dimensionality).toBe("3d");
     expect(firstRect.opacity).toBe(60);
   });
 });

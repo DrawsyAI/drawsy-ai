@@ -182,6 +182,7 @@ export class API {
     strokeColor?: ExcalidrawGenericElement["strokeColor"];
     backgroundColor?: ExcalidrawGenericElement["backgroundColor"];
     fillStyle?: ExcalidrawGenericElement["fillStyle"];
+    dimensionality?: ExcalidrawGenericElement["dimensionality"];
     strokeWidth?: ExcalidrawGenericElement["strokeWidth"];
     strokeStyle?: ExcalidrawGenericElement["strokeStyle"];
     roundness?: ExcalidrawGenericElement["roundness"];
@@ -258,6 +259,8 @@ export class API {
       backgroundColor:
         rest.backgroundColor ?? appState.currentItemBackgroundColor,
       fillStyle: rest.fillStyle ?? appState.currentItemFillStyle,
+      dimensionality:
+        rest.dimensionality ?? appState.currentItemDimensionality,
       strokeWidth: rest.strokeWidth ?? appState.currentItemStrokeWidth,
       strokeStyle: rest.strokeStyle ?? appState.currentItemStrokeStyle,
       roundness: (

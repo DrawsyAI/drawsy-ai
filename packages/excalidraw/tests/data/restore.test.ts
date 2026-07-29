@@ -46,6 +46,23 @@ describe("restoreElements", () => {
     expect(restoredElements.length).toBe(elements.length);
   });
 
+  it("restores dimensionality with a backward-compatible 2D default", () => {
+    const legacyRectangle: any = API.createElement({ type: "rectangle" });
+    delete legacyRectangle.dimensionality;
+    const threeDimensionalDiamond = API.createElement({
+      type: "diamond",
+      dimensionality: "3d",
+    });
+
+    const restoredElements = restore.restoreElements(
+      [legacyRectangle, threeDimensionalDiamond],
+      null,
+    );
+
+    expect(restoredElements[0].dimensionality).toBe("2d");
+    expect(restoredElements[1].dimensionality).toBe("3d");
+  });
+
   it("when imported data state is null it should return an empty array of elements", () => {
     const restoredElements = restore.restoreElements(null, null);
     expect(restoredElements.length).toBe(0);

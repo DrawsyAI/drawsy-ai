@@ -14,6 +14,7 @@ const elementBase: Omit<ExcalidrawElement, "type"> = {
   strokeColor: "#000000",
   backgroundColor: "#15aabf",
   fillStyle: "hachure",
+  dimensionality: "2d",
   strokeWidth: 1,
   strokeStyle: "solid",
   roughness: 1,

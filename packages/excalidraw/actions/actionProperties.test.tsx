@@ -75,6 +75,17 @@ describe("element locking", () => {
       expect(hachureFillButton).toBe(null);
     });
 
+    it("should create shapes using the selected dimensionality", () => {
+      UI.clickTool("ellipse");
+
+      expect(queryByTestId(document.body, "dimension-2d")).toBeChecked();
+      UI.clickOnTestId("dimension-3d");
+
+      const ellipse = API.createElement({ type: "ellipse" });
+      expect(ellipse.dimensionality).toBe("3d");
+      expect(queryByTestId(document.body, "dimension-3d")).toBeChecked();
+    });
+
     it("should show horizontal text align for text tool", () => {
       UI.clickTool("text");
 
@@ -99,6 +110,20 @@ describe("element locking", () => {
 
       const crossHatchButton = queryByTestId(document.body, `fill-cross-hatch`);
       expect(crossHatchButton).toHaveClass("active");
+    });
+
+    it("should change dimensionality only on supported shapes", () => {
+      const rectangle = API.createElement({
+        type: "rectangle",
+      });
+      const ellipse = API.createElement({ type: "ellipse" });
+      API.setElements([rectangle, ellipse]);
+      API.setSelectedElements([rectangle, ellipse]);
+
+      UI.clickOnTestId("dimension-3d");
+
+      expect(window.h.elements[0].dimensionality).toBe("2d");
+      expect(window.h.elements[1].dimensionality).toBe("3d");
     });
 
     it("should not show fill style selected element's background is transparent", () => {
