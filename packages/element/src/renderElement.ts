@@ -399,7 +399,9 @@ const drawElementOnCanvas = (
       context.lineJoin = "round";
       context.lineCap = "round";
 
-      rc.draw(ShapeCache.generateElementShape(element, renderConfig));
+      const shape = ShapeCache.generateElementShape(element, renderConfig);
+      const shapes = Array.isArray(shape) ? shape : [shape];
+      shapes.forEach((drawable) => rc.draw(drawable));
       break;
     }
     case "arrow":

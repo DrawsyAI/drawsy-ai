@@ -72,6 +72,7 @@ import type {
   ExcalidrawFreeDrawElement,
   ElementsMap,
   ExcalidrawLineElement,
+  ExcalidrawDiamondElement,
   Arrowhead,
 } from "./types";
 
@@ -255,6 +256,105 @@ export const generateRoughOptions = (
       throw new Error(`Unimplemented type ${element.type}`);
     }
   }
+};
+
+const ELLIPSE_CURVE_APPROXIMATION = 0.5522847498;
+
+const getFaceOptions = (
+  element: ExcalidrawElement,
+  isDarkMode: boolean,
+  seedOffset: number,
+) => ({
+  ...generateRoughOptions(element, true, isDarkMode),
+  seed: element.seed + seedOffset,
+});
+
+const generateDiamondFace = (
+  element: ExcalidrawDiamondElement,
+  generator: RoughGenerator,
+  isDarkMode: boolean,
+) => {
+  const [topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY] =
+    getDiamondPoints(element);
+
+  if (!element.roundness) {
+    return generator.polygon(
+      [
+        [topX, topY],
+        [rightX, rightY],
+        [bottomX, bottomY],
+        [leftX, leftY],
+      ],
+      generateRoughOptions(element, false, isDarkMode),
+    );
+  }
+
+  const verticalRadius = getCornerRadius(Math.abs(topX - leftX), element);
+  const horizontalRadius = getCornerRadius(Math.abs(rightY - topY), element);
+
+  return generator.path(
+    `M ${topX + verticalRadius} ${topY + horizontalRadius} L ${
+      rightX - verticalRadius
+    } ${rightY - horizontalRadius}
+     C ${rightX} ${rightY}, ${rightX} ${rightY}, ${rightX - verticalRadius} ${
+      rightY + horizontalRadius
+    }
+     L ${bottomX + verticalRadius} ${bottomY - horizontalRadius}
+     C ${bottomX} ${bottomY}, ${bottomX} ${bottomY}, ${
+      bottomX - verticalRadius
+    } ${bottomY - horizontalRadius}
+     L ${leftX + verticalRadius} ${leftY + horizontalRadius}
+     C ${leftX} ${leftY}, ${leftX} ${leftY}, ${leftX + verticalRadius} ${
+      leftY - horizontalRadius
+    }
+     L ${topX - verticalRadius} ${topY + horizontalRadius}
+     C ${topX} ${topY}, ${topX} ${topY}, ${topX + verticalRadius} ${
+      topY + horizontalRadius
+    }`,
+    generateRoughOptions(element, true, isDarkMode),
+  );
+};
+
+const generateThreeDimensionalEllipse = (
+  element: ExcalidrawElement,
+  generator: RoughGenerator,
+  isDarkMode: boolean,
+): Drawable[] => {
+  const capHeight = Math.min(element.height, element.width) * 0.32;
+  const radiusX = element.width / 2;
+  const radiusY = capHeight / 2;
+  const topCenterY = radiusY;
+  const bottomCenterY = element.height - radiusY;
+  const controlX = radiusX * ELLIPSE_CURVE_APPROXIMATION;
+  const controlY = radiusY * ELLIPSE_CURVE_APPROXIMATION;
+
+  const body = generator.path(
+    `M 0 ${topCenterY}
+     L 0 ${bottomCenterY}
+     C 0 ${bottomCenterY + controlY}, ${radiusX - controlX} ${
+      element.height
+    }, ${radiusX} ${element.height}
+     C ${radiusX + controlX} ${element.height}, ${element.width} ${
+      bottomCenterY + controlY
+    }, ${element.width} ${bottomCenterY}
+     L ${element.width} ${topCenterY}
+     C ${element.width} ${topCenterY + controlY}, ${
+      radiusX + controlX
+    } ${capHeight}, ${radiusX} ${capHeight}
+     C ${radiusX - controlX} ${capHeight}, 0 ${
+      topCenterY + controlY
+    }, 0 ${topCenterY}`,
+    getFaceOptions(element, isDarkMode, 1),
+  );
+  const top = generator.ellipse(
+    radiusX,
+    topCenterY,
+    element.width,
+    capHeight,
+    generateRoughOptions(element, false, isDarkMode),
+  );
+
+  return [body, top];
 };
 
 const modifyIframeLikeForRoughOptions = (
@@ -812,53 +912,13 @@ const _generateElementShape = (
       return shape;
     }
     case "diamond": {
-      let shape: ElementShapes[typeof element.type];
-
-      const [topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY] =
-        getDiamondPoints(element);
-      if (element.roundness) {
-        const verticalRadius = getCornerRadius(Math.abs(topX - leftX), element);
-
-        const horizontalRadius = getCornerRadius(
-          Math.abs(rightY - topY),
-          element,
-        );
-
-        shape = generator.path(
-          `M ${topX + verticalRadius} ${topY + horizontalRadius} L ${
-            rightX - verticalRadius
-          } ${rightY - horizontalRadius}
-            C ${rightX} ${rightY}, ${rightX} ${rightY}, ${
-            rightX - verticalRadius
-          } ${rightY + horizontalRadius}
-            L ${bottomX + verticalRadius} ${bottomY - horizontalRadius}
-            C ${bottomX} ${bottomY}, ${bottomX} ${bottomY}, ${
-            bottomX - verticalRadius
-          } ${bottomY - horizontalRadius}
-            L ${leftX + verticalRadius} ${leftY + horizontalRadius}
-            C ${leftX} ${leftY}, ${leftX} ${leftY}, ${leftX + verticalRadius} ${
-            leftY - horizontalRadius
-          }
-            L ${topX - verticalRadius} ${topY + horizontalRadius}
-            C ${topX} ${topY}, ${topX} ${topY}, ${topX + verticalRadius} ${
-            topY + horizontalRadius
-          }`,
-          generateRoughOptions(element, true, isDarkMode),
-        );
-      } else {
-        shape = generator.polygon(
-          [
-            [topX, topY],
-            [rightX, rightY],
-            [bottomX, bottomY],
-            [leftX, leftY],
-          ],
-          generateRoughOptions(element, false, isDarkMode),
-        );
-      }
-      return shape;
+      return generateDiamondFace(element, generator, isDarkMode);
     }
     case "ellipse": {
+      if (element.dimensionality === "3d") {
+        return generateThreeDimensionalEllipse(element, generator, isDarkMode);
+      }
+
       const shape: ElementShapes[typeof element.type] = generator.ellipse(
         element.width / 2,
         element.height / 2,

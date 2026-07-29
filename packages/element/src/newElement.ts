@@ -65,6 +65,7 @@ export type ElementConstructorOpts = MarkOptional<
   | "link"
   | "strokeStyle"
   | "fillStyle"
+  | "dimensionality"
   | "strokeColor"
   | "backgroundColor"
   | "roughness"
@@ -83,6 +84,7 @@ const _newElementBase = <T extends ExcalidrawElement>(
     strokeColor = DEFAULT_ELEMENT_PROPS.strokeColor,
     backgroundColor = DEFAULT_ELEMENT_PROPS.backgroundColor,
     fillStyle = DEFAULT_ELEMENT_PROPS.fillStyle,
+    dimensionality = DEFAULT_ELEMENT_PROPS.dimensionality,
     strokeWidth = DEFAULT_ELEMENT_PROPS.strokeWidth,
     strokeStyle = DEFAULT_ELEMENT_PROPS.strokeStyle,
     roughness = DEFAULT_ELEMENT_PROPS.roughness,
@@ -134,6 +136,7 @@ const _newElementBase = <T extends ExcalidrawElement>(
     strokeColor,
     backgroundColor,
     fillStyle,
+    dimensionality: type === "ellipse" ? dimensionality : "2d",
     strokeWidth,
     strokeStyle,
     roughness,

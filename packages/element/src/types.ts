@@ -17,6 +17,7 @@ import type {
 
 export type ChartType = "bar" | "line" | "radar";
 export type FillStyle = "hachure" | "cross-hatch" | "solid" | "zigzag" | "dots";
+export type Dimensionality = "2d" | "3d";
 export type FontFamilyKeys = keyof typeof FONT_FAMILY;
 export type FontFamilyValues = typeof FONT_FAMILY[FontFamilyKeys];
 export type Theme = typeof THEME[keyof typeof THEME];
@@ -44,6 +45,7 @@ type _ExcalidrawElementBase = Readonly<{
   strokeColor: string;
   backgroundColor: string;
   fillStyle: FillStyle;
+  dimensionality: Dimensionality;
   strokeWidth: number;
   strokeStyle: StrokeStyle;
   roundness: null | { type: RoundnessType; value?: number };

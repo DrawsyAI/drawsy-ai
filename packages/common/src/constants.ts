@@ -415,6 +415,7 @@ export const DEFAULT_ELEMENT_PROPS: {
   strokeColor: ExcalidrawElement["strokeColor"];
   backgroundColor: ExcalidrawElement["backgroundColor"];
   fillStyle: ExcalidrawElement["fillStyle"];
+  dimensionality: ExcalidrawElement["dimensionality"];
   strokeWidth: ExcalidrawElement["strokeWidth"];
   strokeStyle: ExcalidrawElement["strokeStyle"];
   roughness: ExcalidrawElement["roughness"];
@@ -424,6 +425,7 @@ export const DEFAULT_ELEMENT_PROPS: {
   strokeColor: COLOR_PALETTE.black,
   backgroundColor: COLOR_PALETTE.transparent,
   fillStyle: "solid",
+  dimensionality: "2d",
   strokeWidth: 2,
   strokeStyle: "solid",
   roughness: ROUGHNESS.artist,
