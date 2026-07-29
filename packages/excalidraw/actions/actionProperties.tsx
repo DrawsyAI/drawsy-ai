@@ -25,7 +25,11 @@ import {
   FONT_SIZES,
 } from "@excalidraw/common";
 
-import { canBecomePolygon, getNonDeletedElements } from "@excalidraw/element";
+import {
+  canBecomePolygon,
+  canChangeDimensionality,
+  getNonDeletedElements,
+} from "@excalidraw/element";
 
 import {
   bindBindingElement,
@@ -1577,6 +1581,63 @@ export const actionChangeRoundness = register<"sharp" | "round">({
       </fieldset>
     );
   },
+});
+
+export const actionChangeDimensionality = register<
+  ExcalidrawElement["dimensionality"]
+>({
+  name: "changeDimensionality",
+  label: "labels.dimension",
+  trackEvent: false,
+  perform: (elements, appState, value) => {
+    return {
+      elements: changeProperty(elements, appState, (element) =>
+        canChangeDimensionality(element.type)
+          ? newElementWith(element, { dimensionality: value })
+          : element,
+      ),
+      appState: {
+        ...appState,
+        currentItemDimensionality: value,
+      },
+      captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+    };
+  },
+  PanelComponent: ({ elements, appState, updateData, app }) => (
+    <fieldset>
+      <legend>{t("labels.dimension")}</legend>
+      <div className="buttonList">
+        <RadioSelection
+          group="dimension"
+          options={[
+            {
+              value: "2d",
+              text: t("labels.twoDimensional"),
+              icon: <span className="dimension-label">2D</span>,
+              testId: "dimension-2d",
+            },
+            {
+              value: "3d",
+              text: t("labels.threeDimensional"),
+              icon: <span className="dimension-label">3D</span>,
+              testId: "dimension-3d",
+            },
+          ]}
+          value={getFormValue(
+            elements,
+            app,
+            (element) => element.dimensionality,
+            (element) =>
+              canChangeDimensionality(element.type) &&
+              element.hasOwnProperty("dimensionality"),
+            (hasSelection) =>
+              hasSelection ? null : appState.currentItemDimensionality,
+          )}
+          onChange={(value) => updateData(value)}
+        />
+      </div>
+    </fieldset>
+  ),
 });
 
 const getArrowheadOptions = (flip: boolean) => {

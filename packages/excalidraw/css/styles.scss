@@ -190,6 +190,12 @@ body.excalidraw-cursor-resize * {
         font-size: 0.75rem;
       }
 
+      .dimension-label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        line-height: 1;
+      }
+
       input[type="radio"],
       input[type="button"] {
         opacity: 0;

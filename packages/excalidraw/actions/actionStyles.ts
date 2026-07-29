@@ -11,6 +11,7 @@ import { newElementWith } from "@excalidraw/element";
 
 import {
   hasBoundTextElement,
+  canChangeDimensionality,
   canApplyRoundnessTypeToElement,
   getDefaultRoundnessTypeForElement,
   isFrameLikeElement,
@@ -102,6 +103,11 @@ export const actionPasteStyles = register({
             strokeColor: elementStylesToCopyFrom?.strokeColor,
             strokeStyle: elementStylesToCopyFrom?.strokeStyle,
             fillStyle: elementStylesToCopyFrom?.fillStyle,
+            dimensionality:
+              canChangeDimensionality(element.type) &&
+              canChangeDimensionality(elementStylesToCopyFrom.type)
+                ? elementStylesToCopyFrom.dimensionality
+                : element.dimensionality,
             opacity: elementStylesToCopyFrom?.opacity,
             roughness: elementStylesToCopyFrom?.roughness,
             roundness: elementStylesToCopyFrom.roundness

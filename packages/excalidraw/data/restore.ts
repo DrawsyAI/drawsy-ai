@@ -353,6 +353,10 @@ const restoreElementWithProperties = <
     isDeleted: element.isDeleted ?? false,
     id: element.id || randomId(),
     fillStyle: element.fillStyle || DEFAULT_ELEMENT_PROPS.fillStyle,
+    dimensionality:
+      element.dimensionality === "3d"
+        ? "3d"
+        : DEFAULT_ELEMENT_PROPS.dimensionality,
     strokeWidth: element.strokeWidth || DEFAULT_ELEMENT_PROPS.strokeWidth,
     strokeStyle: element.strokeStyle ?? DEFAULT_ELEMENT_PROPS.strokeStyle,
     roughness: element.roughness ?? DEFAULT_ELEMENT_PROPS.roughness,

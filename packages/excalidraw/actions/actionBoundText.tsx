@@ -247,6 +247,7 @@ export const actionWrapTextInContainer = register({
           ],
           angle: textElement.angle,
           fillStyle: appState.currentItemFillStyle,
+          dimensionality: appState.currentItemDimensionality,
           strokeColor: appState.currentItemStrokeColor,
           roughness: appState.currentItemRoughness,
           strokeWidth: appState.currentItemStrokeWidth,

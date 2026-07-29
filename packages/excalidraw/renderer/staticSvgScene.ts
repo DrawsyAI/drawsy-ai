@@ -149,22 +149,32 @@ const renderElementToSvg = (
     case "diamond":
     case "ellipse": {
       const shape = ShapeCache.generateElementShape(element, renderConfig);
-      const node = roughSVGDrawWithPrecision(
-        rsvg,
-        shape,
-        MAX_DECIMALS_FOR_SVG_EXPORT,
+      const shapes = Array.isArray(shape) ? shape : [shape];
+      const nodes = shapes.map((drawable) =>
+        roughSVGDrawWithPrecision(rsvg, drawable, MAX_DECIMALS_FOR_SVG_EXPORT),
       );
-      if (opacity !== 1) {
-        node.setAttribute("stroke-opacity", `${opacity}`);
-        node.setAttribute("fill-opacity", `${opacity}`);
-      }
-      node.setAttribute("stroke-linecap", "round");
-      node.setAttribute(
-        "transform",
-        `translate(${offsetX || 0} ${
-          offsetY || 0
-        }) rotate(${degree} ${cx} ${cy})`,
-      );
+      nodes.forEach((node) => {
+        if (opacity !== 1) {
+          node.setAttribute("stroke-opacity", `${opacity}`);
+          node.setAttribute("fill-opacity", `${opacity}`);
+        }
+        node.setAttribute("stroke-linecap", "round");
+        node.setAttribute(
+          "transform",
+          `translate(${offsetX || 0} ${
+            offsetY || 0
+          }) rotate(${degree} ${cx} ${cy})`,
+        );
+      });
+
+      const node =
+        nodes.length === 1
+          ? nodes[0]
+          : (() => {
+              const group = svgRoot.ownerDocument.createElementNS(SVG_NS, "g");
+              nodes.forEach((child) => group.appendChild(child));
+              return group;
+            })();
 
       const g = maybeWrapNodesInFrameClipPath(
         element,

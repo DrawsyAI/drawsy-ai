@@ -11,6 +11,7 @@ export {
   hasStrokeStyle,
   canHaveArrowheads,
   canChangeRoundness,
+  canChangeDimensionality,
 } from "@excalidraw/element";
 export {
   getNormalizedZoom,

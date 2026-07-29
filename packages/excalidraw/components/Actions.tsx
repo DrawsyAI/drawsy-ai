@@ -41,6 +41,7 @@ import { useTunnels } from "../context/tunnels";
 import { t } from "../i18n";
 import {
   canChangeRoundness,
+  canChangeDimensionality,
   canHaveArrowheads,
   getTargetElements,
   hasBackground,
@@ -231,6 +232,12 @@ export const SelectedShapeActions = ({
         targetElements.some((element) => canChangeRoundness(element.type))) && (
         <>{renderAction("changeRoundness")}</>
       )}
+
+      {(canChangeDimensionality(appState.activeTool.type) ||
+        targetElements.some((element) =>
+          canChangeDimensionality(element.type),
+        )) &&
+        renderAction("changeDimensionality")}
 
       {(toolIsArrow(appState.activeTool.type) ||
         targetElements.some((element) => toolIsArrow(element.type))) && (
@@ -425,6 +432,11 @@ const CombinedShapeProperties = ({
                   canChangeRoundness(element.type),
                 )) &&
                 renderAction("changeRoundness")}
+              {(canChangeDimensionality(appState.activeTool.type) ||
+                targetElements.some((element) =>
+                  canChangeDimensionality(element.type),
+                )) &&
+                renderAction("changeDimensionality")}
               {renderAction("changeOpacity")}
               {appState.activeTool.type === "freedraw" &&
                 renderAction(actionToggleDrawToShape.name)}
