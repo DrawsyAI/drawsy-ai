@@ -2,6 +2,10 @@ export type DrawsyCanvasSnapshot = {
   canvasId: string;
   canvasName: string;
   elements: readonly unknown[];
+  renderContext: {
+    theme: "light" | "dark";
+    canvasBackgroundColor: string;
+  };
   appState?: Record<string, unknown>;
   files?: Record<string, unknown>;
 };

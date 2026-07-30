@@ -5040,11 +5040,16 @@ const ExcalidrawWrapper = () => {
           },
         ]),
       );
+      const appState = excalidrawAPI.getAppState();
       return {
         canvasId: expectedCanvasId,
         canvasName: drawsyCanvasName || "Untitled",
         elements: excalidrawAPI.getSceneElementsIncludingDeleted(),
-        appState: clearAppStateForDatabase(excalidrawAPI.getAppState()),
+        renderContext: {
+          theme: appState.theme,
+          canvasBackgroundColor: appState.viewBackgroundColor,
+        },
+        appState: clearAppStateForDatabase(appState),
         files,
       };
     },
