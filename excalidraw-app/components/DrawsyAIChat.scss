@@ -866,6 +866,156 @@
   color: color-mix(in srgb, #e09f24 68%, var(--chat-text));
 }
 
+.drawsy-ai-chat__turn-activity {
+  width: 100%;
+  align-self: flex-start;
+  color: var(--chat-muted);
+  font-size: 0.68rem;
+}
+
+.drawsy-ai-chat__turn-activity-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.52rem 0;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--chat-text) 10%, transparent);
+  background: transparent;
+  color: var(--chat-muted);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+
+  &:hover {
+    color: var(--chat-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--chat-primary);
+    outline-offset: 2px;
+  }
+
+  > span:first-child {
+    color: var(--chat-text);
+    font-weight: 650;
+  }
+
+  > span:nth-child(2) {
+    color: var(--chat-muted);
+  }
+}
+
+.drawsy-ai-chat__turn-activity-chevron {
+  display: inline-flex;
+  margin-left: auto;
+  transition: transform 140ms ease-out;
+
+  svg {
+    width: 0.78rem;
+    height: 0.78rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+  }
+}
+
+.drawsy-ai-chat__turn-activity-toggle[aria-expanded="true"]
+  .drawsy-ai-chat__turn-activity-chevron {
+  transform: rotate(90deg);
+}
+
+.drawsy-ai-chat__turn-activity-details {
+  padding: 0.65rem 0 0.3rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--chat-text) 10%, transparent);
+}
+
+.drawsy-ai-chat__turn-activity-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  color: var(--chat-muted);
+  font-size: 0.62rem;
+}
+
+.drawsy-ai-chat__turn-activity-section {
+  margin-top: 0.7rem;
+
+  > strong {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--chat-text);
+    font-size: 0.64rem;
+    font-weight: 700;
+  }
+
+  ol {
+    display: grid;
+    gap: 0.26rem;
+    margin: 0;
+    padding: 0 0 0 1.15rem;
+  }
+
+  li {
+    display: flex;
+    min-width: 0;
+    justify-content: space-between;
+    gap: 0.65rem;
+    padding: 0.28rem 0;
+    color: var(--chat-muted);
+    font-size: 0.64rem;
+
+    > span:first-child {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+  }
+}
+
+.drawsy-ai-chat__turn-activity-status {
+  flex: 0 0 auto;
+  color: color-mix(in srgb, #2f9e68 76%, var(--chat-text));
+  font-size: 0.57rem;
+  font-weight: 700;
+}
+
+.drawsy-ai-chat__turn-activity-status--failed {
+  color: color-mix(in srgb, #e03131 76%, var(--chat-text));
+}
+
+.drawsy-ai-chat__turn-activity-status--warning {
+  color: color-mix(in srgb, #e09f24 76%, var(--chat-text));
+}
+
+.drawsy-ai-chat__turn-activity-status--inProgress {
+  color: var(--chat-muted);
+}
+
+.drawsy-ai-chat__turn-activity-updates {
+  display: grid;
+  max-height: 12rem;
+  gap: 0.55rem;
+  overflow: auto;
+}
+
+.drawsy-ai-chat__turn-activity-update {
+  min-width: 0;
+  color: var(--chat-muted);
+  font-size: 0.66rem;
+  line-height: 1.42;
+
+  &:not(:first-child) {
+    padding-top: 0.55rem;
+    border-top: 1px solid color-mix(in srgb, var(--chat-text) 7%, transparent);
+  }
+
+  .drawsy-ai-chat__markdown {
+    color: inherit;
+  }
+}
+
 .drawsy-ai-chat__composer-wrap {
   position: relative;
   padding: 0 0.75rem 0.45rem;
