@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://drawsy.adarsh.rocks">Live demo</a>
+  <a href="https://drawsyai.tech">Live demo</a>
   · <a href="./BUILD_WEEK.md">Build Week record</a>
   · <a href="./CONTRIBUTING.md">Contributing</a>
   · <a href="./SECURITY.md">Security</a>
@@ -124,7 +124,7 @@ This repository contains the Drawsy web client and the Excalidraw foundation it 
 
 The fastest judge and reviewer path is the hosted product:
 
-**[Open Drawsy](https://drawsy.adarsh.rocks)**
+**[Open Drawsy](https://drawsyai.tech)**
 
 Suggested flow:
 

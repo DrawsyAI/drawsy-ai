@@ -1,6 +1,6 @@
 # Drawsy Libraries
 
-> Explore Drawsy Libraries at <https://drawsy.adarsh.rocks/drawsy-libraries/>.
+> Explore Drawsy Libraries at <https://drawsyai.tech/drawsy-libraries/>.
 
 ## Create your own library
 
@@ -30,6 +30,6 @@ If you want to test your library file, use the "Load" button in the library menu
 6. In general, a library should be composed of at least 3 items, and the items should be related to each other (be in a single category).
 7. If a library item consists of multiple elements, you should group them together so that the item acts as a single unit when inserting on canvas. Exception being templates or if you really think it works better if ungrouped.
 
-Browse the existing libraries at <https://drawsy.adarsh.rocks/drawsy-libraries/?theme=light&sort=default> to get started.
+Browse the existing libraries at <https://drawsyai.tech/drawsy-libraries/?theme=light&sort=default> to get started.
 
 Once the library is submitted for review, changes may be requested if the guidelines above are not followed or the quality doesn't meet the standards of the published libraries.

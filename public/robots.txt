@@ -10,4 +10,4 @@ Allow: /
 Allow: /sitemap.xml
 Disallow: /
 
-Sitemap: https://drawsy.adarsh.rocks/sitemap.xml
+Sitemap: https://drawsyai.tech/sitemap.xml

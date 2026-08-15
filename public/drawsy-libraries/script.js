@@ -114,7 +114,7 @@ const sortBy = {
 
 // -----------------------------------------------------------------------------
 const APP_NAMES = {
-  "Drawsy AI": "https://drawsy.adarsh.rocks",
+  "Drawsy AI": "https://drawsyai.tech",
 };
 
 let appName = "";
@@ -207,7 +207,7 @@ const populateLibraryList = (filterQuery = "") => {
   const template = document.getElementById("template");
   const searchParams = new URLSearchParams(location.search);
   const referrer = escapeHTMLAttribute(
-    searchParams.get("referrer") || "https://drawsy.adarsh.rocks",
+    searchParams.get("referrer") || "https://drawsyai.tech",
   );
   const appName = getAppName(referrer);
   const target = decodeURIComponent(
@@ -416,7 +416,10 @@ document.addEventListener("click", (event) => {
     if (referrer && referrerVersion < libraryVersion) {
       let message =
         "It seems the Drawsy editor's version is older than the library version. Installing this library may not work correctly.";
-      if (referrer.includes("drawsy.adarsh.rocks")) {
+      if (
+        referrer.includes("drawsyai.tech") ||
+        referrer.includes("drawsy.adarsh.rocks")
+      ) {
         message += `\n\nTo ensure you are on the latest version, reload the Drawsy tab. If that doesn't work, ensure you only have a single Drawsy tab open.`;
       }
       window.alert(message);

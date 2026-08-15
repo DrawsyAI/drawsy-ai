@@ -4,6 +4,7 @@ import callsites from "callsites";
 
 const SentryEnvHostnameMap: { [key: string]: string } = {
   "drawsy.adarsh.rocks": "production",
+  "drawsyai.tech": "production",
   "vercel.app": "staging",
 };
 

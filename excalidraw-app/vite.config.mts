@@ -126,7 +126,7 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       Sitemap({
-        hostname: "https://drawsy.adarsh.rocks",
+        hostname: "https://drawsyai.tech",
         outDir: "build",
         changefreq: "monthly",
         // its static in public folder

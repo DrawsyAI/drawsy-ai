@@ -101,7 +101,7 @@ The five supporting repositories remain private pending a dedicated security and
 
 ## Reproduce and evaluate
 
-- **Hosted product:** [drawsy.adarsh.rocks](https://drawsy.adarsh.rocks)
+- **Hosted product:** [drawsyai.tech](https://drawsyai.tech)
 - **Local client:** follow [README.md](./README.md#local-development)
 - **Validation:** `yarn test:typecheck`, `yarn test:app --watch=false`, and `yarn build`
 - **Demo video:** to be supplied on the Devpost submission as a public YouTube link
