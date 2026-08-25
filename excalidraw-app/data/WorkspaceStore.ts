@@ -1149,6 +1149,7 @@ export class WorkspaceStore {
     documents: Array<{
       metadata: RemoteCanvasMetadata;
       scene: CanvasScene | null;
+      sceneUnavailable?: boolean;
     }>,
     replacementScene: CanvasScene,
   ) {
@@ -1168,6 +1169,7 @@ export class WorkspaceStore {
     documents: Array<{
       metadata: RemoteCanvasMetadata;
       scene: CanvasScene | null;
+      sceneUnavailable?: boolean;
     }>,
     replacementScene: CanvasScene,
   ) {
@@ -1217,11 +1219,88 @@ export class WorkspaceStore {
 
     const nextCanvases: CanvasDocumentMetadata[] = [];
     let activeConflictCanvasId: string | null = null;
-    for (const { metadata: remote, scene } of documents) {
+    for (const { metadata: remote, scene, sceneUnavailable } of documents) {
       if (pendingDeleteIds.has(remote.id)) {
         continue;
       }
       const local = index.canvases.find((canvas) => canvas.id === remote.id);
+      if (sceneUnavailable && local) {
+        const cachedContentMatches =
+          local.sync.remoteContentHash !== null &&
+          local.sync.remoteContentHash === remote.remoteContentHash;
+        if (cachedContentMatches) {
+          nextCanvases.push({
+            ...local,
+            sync: {
+              ...local.sync,
+              remoteVersion: remote.remoteVersion,
+              remoteContentHash: remote.remoteContentHash,
+              dirty: true,
+              contentDirty: true,
+            },
+          });
+          continue;
+        }
+        if (
+          local.sync.contentDirty &&
+          local.sync.remoteVersion === remote.remoteVersion
+        ) {
+          nextCanvases.push({
+            ...local,
+            sync: {
+              ...local.sync,
+              dirty: true,
+              contentDirty: true,
+            },
+          });
+          continue;
+        }
+        if (
+          local.sync.contentDirty &&
+          local.sync.remoteVersion !== remote.remoteVersion
+        ) {
+          const localDocument = await getDocument(local.id);
+          if (localDocument) {
+            const conflictTitle = getUniqueCanvasTitle(
+              { ...index, canvases: [...index.canvases, ...nextCanvases] },
+              `${local.title} (conflict)`,
+            );
+            const conflictMetadata: CanvasDocumentMetadata = {
+              ...local,
+              id: createId(),
+              title: conflictTitle,
+              version: 1,
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+              lastOpenedAt: Date.now(),
+              sync: createCanvasSyncState(),
+            };
+            nextCanvases.push(conflictMetadata);
+            await persistDocument(conflictMetadata, {
+              ...localDocument.scene,
+              appState: {
+                ...localDocument.scene.appState,
+                name: conflictTitle,
+              },
+            });
+            if (local.id === index.activeCanvasId) {
+              activeConflictCanvasId = conflictMetadata.id;
+            }
+          }
+        }
+        const { remoteVersion, remoteContentHash, ...metadata } = remote;
+        nextCanvases.push({
+          ...metadata,
+          version: local.version,
+          sync: {
+            remoteVersion,
+            remoteContentHash,
+            dirty: false,
+            contentDirty: false,
+          },
+        });
+        continue;
+      }
       if (
         local?.sync.dirty &&
         (local.sync.remoteVersion === remote.remoteVersion ||
