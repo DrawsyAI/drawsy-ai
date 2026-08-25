@@ -36,6 +36,12 @@ import {
 } from "./remoteStorage";
 import { getFirebaseApp } from "./firebaseApp";
 
+import {
+  isSavedToCloudflare,
+  loadFromCloudflare,
+  saveToCloudflare,
+} from "./cloudflareRoomStorage";
+
 import { getSyncableElements } from ".";
 
 import type { SyncableExcalidrawElement } from ".";
@@ -87,27 +93,30 @@ const decryptElements = async (
   return JSON.parse(decodedData);
 };
 
-class FirebaseSceneVersionCache {
+class LegacyFirebaseSceneVersionCache {
   private static cache = new WeakMap<Socket, number>();
   static get = (socket: Socket) => {
-    return FirebaseSceneVersionCache.cache.get(socket);
+    return LegacyFirebaseSceneVersionCache.cache.get(socket);
   };
   static set = (
     socket: Socket,
     elements: readonly SyncableExcalidrawElement[],
   ) => {
-    FirebaseSceneVersionCache.cache.set(socket, getSceneVersion(elements));
+    LegacyFirebaseSceneVersionCache.cache.set(
+      socket,
+      getSceneVersion(elements),
+    );
   };
 }
 
-export const isSavedToFirebase = (
+const isSavedToLegacyFirebase = (
   portal: Portal,
   elements: readonly ExcalidrawElement[],
 ): boolean => {
   if (portal.socket && portal.roomId && portal.roomKey) {
     const sceneVersion = getSceneVersion(elements);
 
-    return FirebaseSceneVersionCache.get(portal.socket) === sceneVersion;
+    return LegacyFirebaseSceneVersionCache.get(portal.socket) === sceneVersion;
   }
   // if no room exists, consider the room saved so that we don't unnecessarily
   // prevent unload (there's nothing we could do at that point anyway)
@@ -156,7 +165,7 @@ const createFirebaseSceneDocument = async (
   } as FirebaseStoredScene;
 };
 
-export const saveToFirebase = async (
+export const saveToLegacyFirebase = async (
   portal: Portal,
   elements: readonly SyncableExcalidrawElement[],
   appState: AppState,
@@ -167,7 +176,7 @@ export const saveToFirebase = async (
     !roomId ||
     !roomKey ||
     !socket ||
-    isSavedToFirebase(portal, elements)
+    isSavedToLegacyFirebase(portal, elements)
   ) {
     return null;
   }
@@ -213,12 +222,12 @@ export const saveToFirebase = async (
     restoreElements(await decryptElements(storedScene, roomKey), null),
   );
 
-  FirebaseSceneVersionCache.set(socket, storedElements);
+  LegacyFirebaseSceneVersionCache.set(socket, storedElements);
 
   return toBrandedType<RemoteExcalidrawElement[]>(storedElements);
 };
 
-export const loadFromFirebase = async (
+export const loadFromLegacyFirebase = async (
   roomId: string,
   roomKey: string,
   socket: Socket | null,
@@ -237,11 +246,18 @@ export const loadFromFirebase = async (
   );
 
   if (socket) {
-    FirebaseSceneVersionCache.set(socket, elements);
+    LegacyFirebaseSceneVersionCache.set(socket, elements);
   }
 
   return elements;
 };
+
+// Retain the old Firestore implementation above for rollback and migration
+// reference. These are the active room exports; Firebase Auth remains
+// independent and continues to be used by the application.
+export const isSavedToFirebase = isSavedToCloudflare;
+export const saveToFirebase = saveToCloudflare;
+export const loadFromFirebase = loadFromCloudflare;
 
 export const loadFilesFromFirebase = async (
   prefix: string,
