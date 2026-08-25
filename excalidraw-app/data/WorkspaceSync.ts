@@ -110,7 +110,11 @@ export class WorkspaceSync {
       cached.sync.remoteContentHash !== metadata.sync.remoteContentHash
     ) {
       try {
-        const scene = await this.api.getCanvasScene(canvasId);
+        const scene = mergeRemoteWorkspaceScene(
+          await this.api.getCanvasScene(canvasId),
+          metadata.title,
+          cached?.scene,
+        );
         index = await WorkspaceStore.cacheRemoteCanvas(index, canvasId, scene);
       } catch (error) {
         if (error instanceof WorkspaceApiError && error.status === 404) {
@@ -263,22 +267,41 @@ export class WorkspaceSync {
           local?.sync.remoteVersion === version ||
           (contentHash !== null &&
             local?.sync.remoteContentHash === contentHash);
-        const scene =
-          localDocument && contentMatches
-            ? {
-                ...localDocument.scene,
-                appState: {
-                  ...localDocument.scene.appState,
-                  name: canvas.title,
-                },
-              }
-            : canvas.id === activeCanvasId || local?.sync.dirty
-            ? mergeRemoteWorkspaceScene(
-                await this.api.getCanvasScene(canvas.id),
-                canvas.title,
-                localDocument?.scene,
-              )
-            : null;
+        let sceneUnavailable = false;
+        let scene: CanvasScene | null = null;
+        if (localDocument && contentMatches) {
+          scene = {
+            ...localDocument.scene,
+            appState: {
+              ...localDocument.scene.appState,
+              name: canvas.title,
+            },
+          };
+        } else if (canvas.id === activeCanvasId || local?.sync.dirty) {
+          try {
+            scene = mergeRemoteWorkspaceScene(
+              await this.api.getCanvasScene(canvas.id),
+              canvas.title,
+              localDocument?.scene,
+            );
+          } catch (error) {
+            const canRepairFromCache =
+              localDocument &&
+              local &&
+              (local.sync.contentDirty ||
+                (contentHash !== null &&
+                  local.sync.remoteContentHash === contentHash));
+            if (
+              !canRepairFromCache ||
+              !(error instanceof WorkspaceApiError) ||
+              error.status !== 404
+            ) {
+              throw error;
+            }
+            scene = localDocument.scene;
+            sceneUnavailable = true;
+          }
+        }
         const metadata: RemoteCanvasMetadata = {
           ...canvas,
           remoteVersion: version,
@@ -287,6 +310,7 @@ export class WorkspaceSync {
         return {
           metadata,
           scene,
+          ...(sceneUnavailable ? { sceneUnavailable: true } : {}),
         };
       }),
     );

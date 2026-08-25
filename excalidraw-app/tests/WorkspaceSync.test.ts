@@ -157,6 +157,8 @@ describe("WorkspaceSync", () => {
 
     const opened = await sync.openCanvas(workspace.index, "older-canvas");
     expect(opened?.document.id).toBe("older-canvas");
+    expect(opened?.document.title).toBe("Older");
+    expect(opened?.document.scene.appState?.name).toBe("Older");
     expect(api.getCanvasScene).toHaveBeenCalledWith("older-canvas");
     expect(await WorkspaceStore.getDocument("older-canvas")).toBeDefined();
   });
@@ -307,6 +309,69 @@ describe("WorkspaceSync", () => {
     expect(pushed.canvases[0].sync).toEqual({
       remoteVersion: 2,
       remoteContentHash: REMOTE_HASH,
+      dirty: false,
+      contentDirty: false,
+    });
+  });
+
+  it("preserves cached edits as a conflict copy when the remote scene is missing", async () => {
+    WorkspaceStore.setScope("user-missing-scene");
+    const initial = await WorkspaceStore.initialize(createScene("Local copy"));
+    const syncedIndex = await WorkspaceStore.markCanvasSynced(
+      initial.index,
+      initial.document.id,
+      1,
+      REMOTE_HASH,
+      initial.document.version,
+    );
+    await WorkspaceStore.saveCanvas(
+      syncedIndex,
+      initial.document.id,
+      createContentScene("Local copy (cached)", "#f5f5f5") as Parameters<
+        typeof WorkspaceStore.saveCanvas
+      >[2],
+    );
+    const api = createApi();
+    api.getWorkspace.mockResolvedValue({
+      projects: [],
+      canvases: [
+        {
+          id: initial.document.id,
+          title: "Local copy (cached)",
+          projectId: null,
+          version: 2,
+          contentHash: "b".repeat(64),
+          createdAt: 1,
+          updatedAt: 3,
+          lastOpenedAt: 3,
+        },
+      ],
+    });
+    api.getCanvasScene.mockRejectedValue(
+      new WorkspaceApiError(404, "scene_not_found", "Not found"),
+    );
+    const workspace = await new WorkspaceSync(api).initialize(
+      "user-missing-scene",
+      createScene("Ignored"),
+    );
+    const pushed = await new WorkspaceSync(api).push(workspace.index);
+
+    expect(api.getCanvasScene).toHaveBeenCalledTimes(1);
+    expect(api.putCanvas).toHaveBeenCalledTimes(1);
+    expect(api.putCanvas.mock.calls[0]?.[0].sync.remoteVersion).toBe(0);
+    expect(pushed.canvases).toHaveLength(2);
+    expect(
+      pushed.canvases.find((canvas) => canvas.id === initial.document.id)?.sync,
+    ).toEqual({
+      remoteVersion: 2,
+      remoteContentHash: "b".repeat(64),
+      dirty: false,
+      contentDirty: false,
+    });
+    expect(
+      pushed.canvases.find((canvas) => canvas.id !== initial.document.id)?.sync,
+    ).toMatchObject({
+      remoteVersion: 1,
       dirty: false,
       contentDirty: false,
     });
