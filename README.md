@@ -1,211 +1,57 @@
-<p align="center">
-  <img src="./.github/assets/drawsy-logo.svg" width="108" alt="Drawsy AI logo" />
-</p>
+# Drawsy AI
 
-<h1 align="center">Drawsy AI</h1>
+Originally hosted at [`adarshnagrikar14/drawsy-ai`](https://github.com/adarshnagrikar14/drawsy-ai), this repository was transferred to [`DrawsyAI/drawsy-ai`](https://github.com/DrawsyAI/drawsy-ai), which is now canonical.
 
-<p align="center">
-  <strong>A visual workspace where ideas, project context, connected tools, and a coding agent meet on an infinite canvas.</strong>
-</p>
+Drawsy is an AI-powered visual workspace for drawing, planning, building, and working with connected context. It extends [Excalidraw](https://github.com/excalidraw/excalidraw) with workspace-aware AI and product workflows on an infinite canvas.
 
-<p align="center">
-  <a href="https://drawsyai.tech">Live demo</a>
-  · <a href="./BUILD_WEEK.md">Build Week record</a>
-  · <a href="./CONTRIBUTING.md">Contributing</a>
-  · <a href="./SECURITY.md">Security</a>
-  · <a href="https://github.com/excalidraw/excalidraw">Excalidraw</a>
-</p>
+[Open Drawsy](https://drawsyai.tech) · [Contributing](./CONTRIBUTING.md) · [Security](./SECURITY.md)
 
-<p align="center">
-  <a href="./LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-685ED8.svg" /></a>
-  <a href="https://openai.devpost.com/"><img alt="OpenAI Build Week 2026" src="https://img.shields.io/badge/OpenAI-Build%20Week%202026-111111.svg" /></a>
-  <img alt="Built on Excalidraw" src="https://img.shields.io/badge/built%20on-Excalidraw-6965DB.svg" />
-</p>
+## Features
 
-![Drawsy AI canvas with its workspace-aware assistant](./.github/assets/drawsy-build-week.png)
+- Editable Excalidraw canvas for diagrams, notes, and visual plans.
+- AI assistance for inspecting and updating the active canvas or presentation.
+- Projects, presentations, Kanban, Jira, and connected sources in one workspace.
+- Explicit context and access controls for agent sessions.
+- `DRAW.md` files rendered as editable Markdown and Mermaid canvas content.
+- Local coding sessions with live application previews, plus real-time collaboration and share links.
 
-## What is Drawsy?
+## Repository
 
-Drawsy turns the whiteboard into an active workspace. The same hand-drawn canvas can hold diagrams, presentations, project plans, source material, generated images, and a live application preview. Its side-by-side AI surface can understand the current workspace, use explicitly attached context, and propose or apply editable canvas changes.
+This repository contains the Drawsy web client and the Excalidraw monorepo it extends.
 
-The product combines:
+- `excalidraw-app/` — Drawsy application and product integrations.
+- `packages/excalidraw/` — core Excalidraw editor.
+- `packages/` — shared editor packages.
+- `research/` — feature contracts and technical notes.
 
-- the Excalidraw editor and its open, editable scene model;
-- Drawsy workspaces for canvases, presentations, Kanban, Jira, and connected sources;
-- a model-flexible agent surface: Codex or OpenCode, with the same workspace contract, visible tool progress, and Markdown responses;
-- deterministic visual documentation through `DRAW.md`;
-- real-time collaboration and remote asset storage; and
-- local coding workspaces with interactive previews embedded back into the canvas.
+The hosted AI, connectors, collaboration, storage, and local-agent companion are maintained as separate services. The editor can run independently; the complete hosted product requires those services and their configuration.
 
-## #Build Week Special
+## Development
 
-Drawsy existed before OpenAI Build Week. In accordance with the [official rules](https://openai.devpost.com/rules), the submission claims only the meaningful extensions created after **July 13, 2026 at 9:00 AM PT**.
-
-During that window, Drawsy gained:
-
-- **A native AI sidebar** that makes room beside the workspace instead of covering it, with model, permission, and context controls; streaming activity; rich Markdown; copy actions; attachments; and workspace-aware states.
-- **A provider-flexible agent bridge**: Codex and OpenCode operate through the same Drawsy session contract locally or in the hosted runtime. OpenCode discovers currently active, free, tool-capable models at runtime. A provider API key can add that provider's live, tool-capable models for one Drawsy AI session without adding a product login or OAuth flow.
-- **A canvas protocol for agents** to read and edit the current canvas or presentation without receiving automatic access to unrelated workspaces.
-- **Multimodal selection context**: select canvas elements and press `C` to attach a visual crop plus the original source images, allowing annotations and editable image sources to travel together.
-- **Connector-aware prompts** with account-aware `@` tags for sources such as Gmail, Calendar, Drive, GitHub, Notion, meeting tools, and AWS. Access is added to a turn; ordinary prompts remain ordinary prompts.
-- **Drawsy resource tags** for local Kanban and Jira context and actions.
-- **`DRAW.md` rendering** that converts mixed Markdown and Mermaid into normal editable Excalidraw elements, places them beside existing work, and updates only its own generated content.
-- **Interactive live previews**: an agent-started local app can appear as a movable, resizable browser window on the infinite canvas while preserving hot reload.
-- **Precision diagram delivery**: complex visual work arrives in coherent, visible passes. Drawsy uses Excalidraw-native text reflow after the required fonts are available, checks the rendered scene for binding, overlap, overflow, and route problems, then reviews relationship-heavy diagrams as rendered visuals before completion.
-- **Presentation-aware assistance**, theme synchronization, clearer tool states, and targeted reliability fixes around sync and canvas responses.
-
-### Five Drawsy-native innovations
-
-These are not disconnected demos. Each one closes a different gap between thinking, source context, and working software while keeping the result inside the same visual workspace.
-
-#### The canvas can hold the running software
-
-Codex or OpenCode can build or run a project in the selected workspace and attach its live service as an interactive canvas element. The preview moves and resizes like part of the board, keeps framework hot reload, receives its own isolated runtime port, and lives in session-local preview state instead of being synchronized as permanent canvas data.
-
-![A local Snake game running inside a movable Drawsy canvas preview](./.github/assets/drawsy-live-preview.png)
-
-#### The model can change; the workspace contract does not
-
-This is more than a model switcher. Drawsy gives every supported runtime the same surface-scoped MCP: the current canvas or presentation, explicit visual captures, connected-source tags, local Kanban/Jira resources, and the selected coding folder. A model gains no hidden canvas route or account access simply because it is selected.
-
-Codex is available through its app-server integration. OpenCode runs in a fresh, folder-contained session locally or in the hosted runtime and dynamically lists its live free models rather than shipping a stale model catalogue. Adding a provider API key refreshes the selectable tool-capable models from that provider for that one OpenCode session. The key is never persisted in browser storage, the Drawsy database, or the selected workspace; it exists only in the bridge session and disposable OpenCode runtime, and is discarded when that session closes or the bridge restarts. This makes the model layer replaceable while the Drawsy safety, context, and editing experience stay consistent.
-
-#### Connected context is visible and optional
-
-Drawsy separates connecting an account from using it in a prompt. People can see which sources are connected, then explicitly attach the relevant account or capability with `@` only when a task needs it. The model receives a short-lived grant for that turn—not the provider's OAuth credentials—and an untagged conversation remains unaffected.
-
-![Drawsy connected context workspace with user-controlled sources](./.github/assets/drawsy-connected-context.png)
-
-#### A project document can become an editable visual map
-
-`DRAW.md` combines readable Markdown with Mermaid diagrams. Opening a folder renders that document as native Excalidraw frames, text, and geometry beside existing work—without AI or network access. The file remains canonical; later edits refresh only its generated elements in place.
-
-![A DRAW.md project document rendered as editable Drawsy canvas content](./.github/assets/drawsy-draw-md.png)
-
-#### Complex diagrams stay editable while they become precise
-
-Drawsy does not wait to dump a finished diagram onto the board. It applies structural anchors, routes, labels, and annotations in visible passes, then reads the actual rendered result. The client uses Excalidraw's native text-editing geometry—rather than model-guessed label bounds—to wrap, place, and resize bound text correctly once the needed fonts are available.
-
-The resulting layout review is evidence, not a rigid template: it reports text/container problems, unintended node overlaps, and connectors crossing unrelated nodes. For diagrams where meaning depends on relationships, the agent also reviews a rendered capture for readable labels and unambiguous source-to-target routes. It repairs only relevant findings; it does not encode subject-specific diagram rules, move unrelated content, or claim that layout checks prove factual correctness.
-
-![A streamed, editable autophagy pathway on a Drawsy canvas](./.github/assets/drawsy-precision-diagram.png)
-
-### Build Week repository set
-
-This frontend and five supporting repositories form the complete implementation used for judging. The supporting repositories are **private for now** because they contain deployment and security-sensitive service code; judge access is granted directly. They may be published later after a dedicated security and release review.
-
-- [`drawsy-ai-backend`](https://github.com/adarshnagrikar14/drawsy-ai-backend) — authenticated workspaces, Kanban/Jira resources, connectors, grants, and provider execution.
-- [`drawsy-ai-mcp`](https://github.com/adarshnagrikar14/drawsy-ai-mcp) — surface-scoped Drawsy MCP, Codex/OpenCode bridge, sandbox, canvas tools, dynamic model selection, and live-preview runtime.
-- [`draws-ai-wss`](https://github.com/adarshnagrikar14/draws-ai-wss) — Excalidraw-compatible real-time collaboration service.
-- [`drawsy-ai-store`](https://github.com/adarshnagrikar14/drawsy-ai-store) — encrypted share-link scene storage.
-- [`drawsy-ai-libraries`](https://github.com/adarshnagrikar14/drawsy-ai-libraries) — Drawsy's Excalidraw-compatible library catalog.
-
-The qualifying record, engineering notes, and Codex collaboration are documented in [BUILD_WEEK.md](./BUILD_WEEK.md).
-
-## How it works
-
-```mermaid
-flowchart LR
-  Person["Person"] --> Client["Drawsy web client"]
-  Client --> Canvas["Excalidraw canvas"]
-  Client --> Surfaces["Presentation · Kanban · Jira"]
-  Client <--> Bridge["Drawsy agent bridge"]
-  Bridge <--> Agents["Codex app-server · OpenCode runtime"]
-  Bridge <--> CanvasMCP["Drawsy canvas MCP"]
-  Bridge <--> Sources["Connected sources"]
-  CanvasMCP <--> Canvas
-  Agents --> Preview["Isolated live preview"]
-  Preview --> Canvas
-```
-
-This repository contains the Drawsy web client and the Excalidraw foundation it extends. Supporting backend, collaboration, storage, signer, and MCP services are maintained separately; private repositories are shared directly with the hackathon judges.
-
-## Try it
-
-The fastest judge and reviewer path is the hosted product:
-
-**[Open Drawsy](https://drawsyai.tech)**
-
-Suggested flow:
-
-1. Sign in and create or open a canvas.
-2. Open **Drawsy AI** from the top-right action or with `Cmd/Ctrl + K`.
-3. Ask it to inspect or modify the current canvas.
-4. Select a meaningful group of elements and press `C`; the visual context appears in the composer.
-5. If a source is connected, type `@` and choose it for that prompt.
-6. Open a selected folder containing `DRAW.md` to render its project map, or ask either runtime to run an app and attach its live preview.
-
-Some connector scenarios require the corresponding account to be connected. The core canvas and UI remain usable without connectors.
-
-## Local development
-
-### Requirements
-
-- Node.js 18 or newer
-- Yarn 1.22.22
-
-### Start the web client
+Requirements: Node.js 18+ and Yarn 1.22.22.
 
 ```bash
-git clone https://github.com/adarshnagrikar14/drawsy-ai.git
-cd excal-ai
+git clone https://github.com/DrawsyAI/drawsy-ai.git
+cd drawsy-ai
 yarn install
 yarn start
 ```
 
-The development server uses `http://localhost:3001` with the checked-in development configuration.
+The app runs at `http://localhost:3001`.
 
-### Validate a change
+Run the standard checks:
 
 ```bash
-yarn test:typecheck
-yarn test:app --watch=false
+yarn test:all
 yarn build
 ```
 
-The standalone editor can be developed from this repository. AI, connectors, collaboration, remote storage, and hosted live previews require their supporting services; use the hosted demo when evaluating the complete product without rebuilding the stack.
+## Contributing
 
-## `DRAW.md`
+Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request. Report vulnerabilities privately through [SECURITY.md](./SECURITY.md).
 
-`DRAW.md` is Drawsy's deterministic visual project document. It is deliberately not an AI-only format: the file remains canonical, Markdown stays readable, Mermaid becomes editable canvas geometry, and existing canvas content is left alone.
-
-````md
-# Request lifecycle
-
-The API validates each request before reading project data.
-
-```mermaid
-flowchart LR
-  Browser --> API --> Workspace
-```
-
-## Notes
-
-- The browser owns the visible experience.
-- The API owns validation and permissions.
-````
-
-See the complete [DRAW.md v1 contract](./research/draw-md-v1-spec.md).
-
-## Project principles
-
-- **Context is explicit.** The active surface and user attachments define what the agent can see.
-- **The canvas stays editable.** AI output should become native elements whenever possible.
-- **Deterministic when deterministic is better.** `DRAW.md` does not require AI or network access.
-- **Local work stays local by default.** Coding workspaces and live-preview processes are isolated from shared canvas data.
-- **The model is replaceable; the scope is not.** Every supported runtime uses the same explicit context, Drawsy MCP, and selected-folder boundary.
-- **No forced workflow.** Connectors, tags, previews, and generated context add capability without changing an ordinary chat request.
-
-## Excalidraw foundation
-
-Drawsy is built on the excellent [Excalidraw](https://github.com/excalidraw/excalidraw) open-source project. It retains Excalidraw's hand-drawn editor, scene model, packages, history, and MIT license, then adds the Drawsy product and agent experience around that core.
-
-This repository is not affiliated with or endorsed by Excalidraw. Upstream copyright and license notices remain intact. For the original editor, npm package, documentation, and community, visit [excalidraw.com](https://excalidraw.com) and the [upstream repository](https://github.com/excalidraw/excalidraw).
-
-## Contributing and security
-
-Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a change. Please report vulnerabilities privately according to [SECURITY.md](./SECURITY.md), not in a public issue. Community participation is governed by the [Code of Conduct](./CODE_OF_CONDUCT.md).
+Drawsy preserves the open, editable scene model of [Excalidraw](https://github.com/excalidraw/excalidraw). Changes to the core editor should follow upstream conventions and retain the original attribution.
 
 ## License
 
-Licensed under the [MIT License](./LICENSE). The license retains the original Excalidraw copyright notice as required.
+[MIT](./LICENSE). Excalidraw copyright and license notices remain intact.
