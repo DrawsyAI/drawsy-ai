@@ -1,0 +1,10 @@
+/* TEAM */
+Drawsy AI Team
+
+/* PRODUCT */
+Drawsy AI Canvas: https://drawsyai.tech/
+AI Workspace & documentation: https://app.drawsyai.tech/
+
+/* TECHNOLOGY */
+Drawsy AI is built around a visual canvas, connected context,
+AI agents, and software workflows.

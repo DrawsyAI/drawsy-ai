@@ -42,6 +42,8 @@
       property="og:image"
       content="https://drawsyai.tech/og-image-3.png"
     />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
@@ -65,6 +67,63 @@
     />
 
     <link rel="canonical" href="https://drawsyai.tech/" />
+    <link
+      rel="alternate"
+      href="https://app.drawsyai.tech/"
+      title="Drawsy AI Workspace"
+    />
+    <link rel="describedby" href="/llms.txt" type="text/plain" />
+    <link rel="author" href="/humans.txt" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://drawsyai.tech/#website",
+            "name": "Drawsy AI",
+            "alternateName": "Drawsy",
+            "url": "https://drawsyai.tech/",
+            "publisher": { "@id": "https://drawsyai.tech/#organization" },
+            "inLanguage": "en"
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://drawsyai.tech/#organization",
+            "name": "Drawsy AI",
+            "url": "https://drawsyai.tech/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://drawsyai.tech/drawsy-logo.svg"
+            },
+            "sameAs": [
+              "https://github.com/DrawsyAI/drawsy-ai",
+              "https://x.com/DrawsyAI",
+              "https://www.linkedin.com/company/drawsy-ai",
+              "https://www.producthunt.com/products/drawsy"
+            ]
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://drawsyai.tech/#canvas-app",
+            "name": "Drawsy AI Canvas",
+            "applicationCategory": "DesignApplication",
+            "operatingSystem": "Web",
+            "description": "Drawsy AI turns messy ideas into visual workspaces with a canvas, project context, and working software in one place.",
+            "url": "https://drawsyai.tech/",
+            "publisher": { "@id": "https://drawsyai.tech/#organization" },
+            "isPartOf": { "@id": "https://drawsyai.tech/#website" },
+            "relatedLink": "https://app.drawsyai.tech/",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            }
+          }
+        ]
+      }
+    </script>
 
     <!------------------------------------------------------------------------->
     <!--   to minimize white flash on load when user has dark mode enabled   -->
@@ -199,7 +258,19 @@
   </head>
 
   <body>
-    <noscript> You need to enable JavaScript to run this app. </noscript>
+    <noscript>
+      <p>You need to enable JavaScript to run Drawsy AI Canvas.</p>
+      <p>
+        <a href="https://drawsyai.tech/">Drawsy AI Canvas</a> ·
+        <a href="https://app.drawsyai.tech/">AI Workspace</a> ·
+        <a href="https://drawsyai.tech/drawsy-libraries/">Drawsy Libraries</a>
+      </p>
+    </noscript>
+    <nav class="visually-hidden" aria-label="Drawsy AI">
+      <a href="https://drawsyai.tech/">Drawsy AI Canvas</a>
+      <a href="https://app.drawsyai.tech/">AI Workspace</a>
+      <a href="https://drawsyai.tech/drawsy-libraries/">Drawsy Libraries</a>
+    </nav>
     <header>
       <h1 class="visually-hidden">Drawsy</h1>
     </header>
