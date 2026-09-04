@@ -2206,7 +2206,7 @@ class App extends React.Component<AppProps, AppState> {
                               this.state.activeTool.type ===
                                 this.state.preferredSelectionTool.type &&
                               !this.state.zenModeEnabled &&
-                              !this.scene.getElementsIncludingDeleted().length
+                              !this.scene.getNonDeletedElements().length
                             }
                             app={this}
                             isCollaborating={this.props.isCollaborating}
@@ -3408,6 +3408,7 @@ class App extends React.Component<AppProps, AppState> {
 
     this.updateEmbeddables();
     const elements = this.scene.getElementsIncludingDeleted();
+    const nonDeletedElements = this.scene.getNonDeletedElements();
     const elementsMap = this.scene.getElementsMapIncludingDeleted();
 
     const shouldExportWithDarkMode =
@@ -3417,7 +3418,7 @@ class App extends React.Component<AppProps, AppState> {
       this.setState({ exportWithDarkMode: shouldExportWithDarkMode });
     }
 
-    if (!this.state.showWelcomeScreen && !elements.length) {
+    if (!this.state.showWelcomeScreen && !nonDeletedElements.length) {
       this.setState({ showWelcomeScreen: true });
     }
 

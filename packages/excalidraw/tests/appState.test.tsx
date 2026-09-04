@@ -4,8 +4,9 @@ import { EXPORT_DATA_TYPES, MIME_TYPES } from "@excalidraw/common";
 
 import type { ExcalidrawTextElement } from "@excalidraw/element/types";
 
+import { actionClearCanvas } from "../actions";
 import { getDefaultAppState } from "../appState";
-import { Excalidraw } from "../index";
+import { Excalidraw, WelcomeScreen } from "../index";
 
 import { API } from "./helpers/api";
 import { Pointer, UI } from "./helpers/ui";
@@ -14,6 +15,26 @@ import { fireEvent, queryByTestId, render, waitFor } from "./test-utils";
 const { h } = window;
 
 describe("appState", () => {
+  it("shows the welcome screen after clearing the canvas", async () => {
+    const { container } = await render(
+      <Excalidraw
+        initialData={{
+          elements: [API.createElement({ id: "rectangle" })],
+        }}
+      >
+        <WelcomeScreen />
+      </Excalidraw>,
+    );
+
+    expect(container.querySelector(".welcome-screen-center")).toBeNull();
+
+    API.executeAction(actionClearCanvas);
+
+    await waitFor(() => {
+      expect(container.querySelector(".welcome-screen-center")).not.toBeNull();
+    });
+  });
+
   it("drag&drop file doesn't reset non-persisted appState", async () => {
     const defaultAppState = getDefaultAppState();
     const exportBackground = !defaultAppState.exportBackground;
