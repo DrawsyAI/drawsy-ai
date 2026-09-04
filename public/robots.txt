@@ -1,3 +1,9 @@
+# drawsyai.tech = product canvas (free board, login, account).
+# Landing page, blog, compare, public pricing SEO = https://app.drawsyai.tech/
+# Do not list app URLs in this host's sitemap. Submit both sitemaps in GSC:
+#   https://drawsyai.tech/sitemap.xml
+#   https://app.drawsyai.tech/sitemap.xml
+
 User-agent: Twitterbot
 Disallow:
 

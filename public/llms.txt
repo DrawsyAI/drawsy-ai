@@ -1,15 +1,20 @@
-# Drawsy AI
+# Drawsy AI Canvas (drawsyai.tech)
 
-Drawsy AI is an AI-native visual workspace built around an interactive canvas.
-The public Canvas is available at https://drawsyai.tech/.
-Users can open the Canvas, sign up or log in, and use Drawsy's product features.
+This host is the product: free interactive canvas, Google login, saved workspaces,
+and account features (profile, in-app upgrade, billing).
 
-For complete product documentation, marketing pages, guides, comparisons,
-blog content, and machine-readable page mirrors, use:
+It is not the marketing / landing site.
+
+Landing page, AI Workspace explainers, agents, comparisons, blog, public pricing,
+and SEO content:
+https://app.drawsyai.tech/
 https://app.drawsyai.tech/llms.txt
 
-Primary product:
+Public canvas (no login required to start):
 https://drawsyai.tech/
 
-AI Workspace and documentation:
-https://app.drawsyai.tech/
+Sign in:
+https://drawsyai.tech/login
+
+Libraries:
+https://drawsyai.tech/drawsy-libraries/
