@@ -17,7 +17,6 @@ Allow: /
 
 User-agent: *
 Allow: /
-Allow: /drawsy-libraries/
 Disallow: /login
 Disallow: /profile
 Disallow: /billing
