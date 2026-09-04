@@ -1,7 +1,7 @@
-var static = require("node-static");
+const nodeStatic = require("node-static");
 
-var file = new static.Server(".");
-PORT = 8080;
+const file = new nodeStatic.Server(".");
+const PORT = 8080;
 
 console.info(`Running at http://localhost:${PORT}`);
 

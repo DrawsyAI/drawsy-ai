@@ -294,7 +294,7 @@ const handleSort = (sortType) => {
 
 const populateSorts = () => {
   const sortTemplate = document.getElementById("sort-template");
-  for ([key, value] of Object.entries(sortBy).filter(
+  for (const [key, value] of Object.entries(sortBy).filter(
     ([key]) => key !== "default",
   )) {
     const spacer = document.createElement("span");
