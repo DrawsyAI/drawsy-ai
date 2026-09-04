@@ -20,27 +20,36 @@ import type { JSX } from "react";
 
 const Header = () => (
   <div className="HelpDialog__header">
-    <button
-      type="button"
+    <a
       className="HelpDialog__btn"
-      title="Documentation is coming soon"
-      disabled
+      href="https://app.drawsyai.tech/"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <div className="HelpDialog__link-icon">{ExternalLinkIcon}</div>
+      AI Workspace
+    </a>
+    <a
+      className="HelpDialog__btn"
+      href="https://app.drawsyai.tech/help"
+      target="_blank"
+      rel="noopener noreferrer"
     >
       <div className="HelpDialog__link-icon">{ExternalLinkIcon}</div>
       {t("helpDialog.documentation")}
-    </button>
-    <button
-      type="button"
+    </a>
+    <a
       className="HelpDialog__btn"
-      title="Blog is coming soon"
-      disabled
+      href="https://app.drawsyai.tech/blog"
+      target="_blank"
+      rel="noopener noreferrer"
     >
       <div className="HelpDialog__link-icon">{ExternalLinkIcon}</div>
       {t("helpDialog.blog")}
-    </button>
+    </a>
     <a
       className="HelpDialog__btn"
-      href="https://github.com/adarshnagrikar14/drawsy-ai"
+      href="https://github.com/DrawsyAI/drawsy-ai"
       target="_blank"
       rel="noopener noreferrer"
     >

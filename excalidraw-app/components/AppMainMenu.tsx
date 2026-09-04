@@ -10,6 +10,8 @@ import React from "react";
 
 import { THEME } from "@excalidraw/common";
 
+import { DRAWSY_WORKSPACE_URL } from "../drawsy-site";
+
 import type { Theme } from "@excalidraw/element/types";
 
 const GoogleLogo = (
@@ -212,6 +214,9 @@ export const AppMainMenu: React.FC<{
       </MainMenu.Sub>
 
       <MainMenu.Separator />
+      <MainMenu.ItemLink href={DRAWSY_WORKSPACE_URL}>
+        AI Workspace
+      </MainMenu.ItemLink>
       <MainMenu.ItemCustom className="drawsy-plus-menu-item">
         <span className="dropdown-menu-item__icon">
           <img
