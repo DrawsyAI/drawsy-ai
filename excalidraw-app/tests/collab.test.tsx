@@ -20,6 +20,7 @@ Object.defineProperty(window, "crypto", {
   value: {
     getRandomValues: (arr: number[]) =>
       arr.forEach((v, i) => (arr[i] = Math.floor(Math.random() * 256))),
+    randomUUID: () => "00000000-0000-4000-8000-000000000000",
     subtle: {
       generateKey: () => {},
       exportKey: () => ({ k: "sTdLvMC_M3V8_vGa3UVRDg" }),
@@ -48,6 +49,20 @@ vi.mock("../../excalidraw-app/data/firebase.ts", () => {
     saveFilesToFirebase,
   };
 });
+
+vi.mock("../auth/useDrawsyAuth", () => ({
+  useDrawsyAuth: () => ({
+    status: "anonymous",
+    user: null,
+    error: null,
+    isBusy: false,
+    signIn: async () => undefined,
+    signOut: async () => undefined,
+    getIdToken: async () => {
+      throw new Error("Authentication is required.");
+    },
+  }),
+}));
 
 vi.mock("socket.io-client", () => {
   return {

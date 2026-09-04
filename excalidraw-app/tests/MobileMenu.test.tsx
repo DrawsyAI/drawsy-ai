@@ -4,8 +4,24 @@ import {
   render,
   restoreOriginalGetBoundingClientRect,
 } from "@excalidraw/excalidraw/tests/test-utils";
+import { vi } from "vitest";
 
 import ExcalidrawApp from "../App";
+
+// Keep app tests independent of Firebase credentials supplied by the runtime.
+vi.mock("../auth/useDrawsyAuth", () => ({
+  useDrawsyAuth: () => ({
+    status: "anonymous",
+    user: null,
+    error: null,
+    isBusy: false,
+    signIn: async () => undefined,
+    signOut: async () => undefined,
+    getIdToken: async () => {
+      throw new Error("Authentication is required.");
+    },
+  }),
+}));
 
 describe("Test MobileMenu", () => {
   const { h } = window;

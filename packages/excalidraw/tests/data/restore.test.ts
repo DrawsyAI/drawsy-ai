@@ -49,13 +49,13 @@ describe("restoreElements", () => {
   it("restores dimensionality with a backward-compatible 2D default", () => {
     const legacyRectangle: any = API.createElement({ type: "rectangle" });
     delete legacyRectangle.dimensionality;
-    const threeDimensionalDiamond = API.createElement({
-      type: "diamond",
+    const threeDimensionalEllipse = API.createElement({
+      type: "ellipse",
       dimensionality: "3d",
     });
 
     const restoredElements = restore.restoreElements(
-      [legacyRectangle, threeDimensionalDiamond],
+      [legacyRectangle, threeDimensionalEllipse],
       null,
     );
 

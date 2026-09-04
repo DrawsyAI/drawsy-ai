@@ -249,12 +249,27 @@ describe("library menu", () => {
     const libraryButton = container.querySelector(".sidebar-trigger");
 
     fireEvent.click(libraryButton!);
+    await waitFor(() => {
+      expect(container.querySelector(".layer-ui__library")).not.toBeNull();
+    });
+
+    await waitFor(() => {
+      expect(
+        container.querySelector(
+          "#sidebar-header-portal-target [data-testid='dropdown-menu-button']",
+        ),
+      ).not.toBeNull();
+    });
+
     fireEvent.click(
-      queryByTestId(
-        container.querySelector(".layer-ui__library")!,
-        "dropdown-menu-button",
+      container.querySelector(
+        "#sidebar-header-portal-target [data-testid='dropdown-menu-button']",
       )!,
     );
+
+    await waitFor(() => {
+      expect(queryByTestId(container, "lib-dropdown--load")).not.toBeNull();
+    });
     fireEvent.click(queryByTestId(container, "lib-dropdown--load")!);
 
     const libraryItems = parseLibraryJSON(await libraryJSONPromise);

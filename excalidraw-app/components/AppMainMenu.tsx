@@ -10,9 +10,9 @@ import React from "react";
 
 import { THEME } from "@excalidraw/common";
 
-import { DRAWSY_WORKSPACE_URL } from "../drawsy-site";
-
 import type { Theme } from "@excalidraw/element/types";
+
+import { DRAWSY_WORKSPACE_URL } from "../drawsy-site";
 
 const GoogleLogo = (
   <svg aria-hidden="true" viewBox="0 0 18 18" className="drawsy-google-logo">

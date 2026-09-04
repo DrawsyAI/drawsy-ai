@@ -18,6 +18,18 @@ import {
 
 const { h } = window;
 
+const normalizeRadixIds = (element: Element) => {
+  const clone = element.cloneNode(true) as HTMLElement;
+  [clone, ...Array.from(clone.querySelectorAll("*"))].forEach((node) => {
+    Array.from(node.attributes).forEach((attribute) => {
+      if (attribute.value.includes("radix-:")) {
+        attribute.value = attribute.value.replace(/radix-:[^"']+/g, "radix-id");
+      }
+    });
+  });
+  return clone;
+};
+
 describe("<Excalidraw/>", () => {
   afterEach(() => {
     const menu = document.querySelector(".dropdown-menu");
@@ -144,7 +156,9 @@ describe("<Excalidraw/>", () => {
         );
         //open menu
         toggleMenu(container);
-        expect(queryByTestId(container, "dropdown-menu")).toMatchSnapshot();
+        expect(
+          normalizeRadixIds(queryByTestId(container, "dropdown-menu")!),
+        ).toMatchSnapshot();
       });
 
       it("should hide clear canvas button when clearCanvas is false", async () => {
@@ -434,7 +448,9 @@ describe("<Excalidraw/>", () => {
       );
       //open menu
       toggleMenu(container);
-      expect(queryByTestId(container, "dropdown-menu")).toMatchSnapshot();
+      expect(
+        normalizeRadixIds(queryByTestId(container, "dropdown-menu")!),
+      ).toMatchSnapshot();
     });
 
     it("should update themeToggle text even if MainMenu memoized", async () => {

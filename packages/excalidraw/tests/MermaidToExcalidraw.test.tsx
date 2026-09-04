@@ -1,5 +1,6 @@
 import { expect, vi } from "vitest";
-import { LocalPoint } from "@excalidraw/math";
+
+import type { LocalPoint } from "@excalidraw/math";
 
 import { Excalidraw } from "../index";
 
@@ -101,7 +102,7 @@ const normalizeDialogSnapshot = (dialog: Element) => {
       }
     });
 
-  return dialogClone.outerHTML;
+  return dialogClone.outerHTML.replace(/radix-:[^"']+/g, "radix-id");
 };
 
 describe("Test <MermaidToExcalidraw/>", () => {
