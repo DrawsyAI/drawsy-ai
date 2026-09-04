@@ -1,3 +1,8 @@
+export const metadata = {
+  title: "Drawsy AI",
+  description: "Drawsy AI visual workspace",
+};
+
 export default function RootLayout({
   children,
 }: {
