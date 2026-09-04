@@ -1,12 +1,22 @@
+# drawsyai.tech = product canvas (free board, login, account).
+# Landing page, blog, compare, public pricing SEO = https://app.drawsyai.tech/
+# Do not list app URLs in this host's sitemap. Submit both sitemaps in GSC:
+#   https://drawsyai.tech/sitemap.xml
+#   https://app.drawsyai.tech/sitemap.xml
+
+# X/Twitter and Facebook crawlers fetch the page + og:image for link previews.
+# Empty "Disallow:" also means allow-all; Allow: / is the explicit form.
 User-agent: Twitterbot
-Disallow:
+Allow: /
 
 User-agent: facebookexternalhit
-Disallow:
+Allow: /
+
+User-agent: Facebot
+Allow: /
 
 User-agent: *
 Allow: /
-Allow: /drawsy-libraries/
 Disallow: /login
 Disallow: /profile
 Disallow: /billing

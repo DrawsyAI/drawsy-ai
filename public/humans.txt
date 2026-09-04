@@ -1,9 +1,17 @@
 /* TEAM */
 Drawsy AI Team
 
-/* PRODUCT */
-Drawsy AI Canvas: https://drawsyai.tech/
-AI Workspace & documentation: https://app.drawsyai.tech/
+/* PRODUCT CANVAS — drawsyai.tech */
+Free canvas, login, workspaces, profile, billing:
+https://drawsyai.tech/
+
+/* LANDING + SEO — app.drawsyai.tech */
+Marketing, AI Workspace, docs, blog, compare, public pricing:
+https://app.drawsyai.tech/
+
+/* SITEMAPS */
+https://drawsyai.tech/sitemap.xml
+https://app.drawsyai.tech/sitemap.xml
 
 /* TECHNOLOGY */
 Drawsy AI is built around a visual canvas, connected context,

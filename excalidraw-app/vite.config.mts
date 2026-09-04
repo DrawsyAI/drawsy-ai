@@ -147,6 +147,16 @@ export default defineConfig(({ mode }) => {
         },
 
         workbox: {
+          // SPA fallback must not swallow crawler files. Chrome address-bar
+          // visits are navigation requests; Workbox otherwise serves index.html
+          // for /robots.txt, /sitemap.xml, /llms.txt, and /humans.txt.
+          navigateFallback: "index.html",
+          navigateFallbackDenylist: [
+            /^\/robots\.txt$/,
+            /^\/sitemap\.xml$/,
+            /^\/llms\.txt$/,
+            /^\/humans\.txt$/,
+          ],
           // don't precache fonts, locales and separate chunks
           globIgnores: [
             "fonts.css",
