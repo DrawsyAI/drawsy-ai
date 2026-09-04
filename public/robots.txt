@@ -4,11 +4,16 @@
 #   https://drawsyai.tech/sitemap.xml
 #   https://app.drawsyai.tech/sitemap.xml
 
+# X/Twitter and Facebook crawlers fetch the page + og:image for link previews.
+# Empty "Disallow:" also means allow-all; Allow: / is the explicit form.
 User-agent: Twitterbot
-Disallow:
+Allow: /
 
 User-agent: facebookexternalhit
-Disallow:
+Allow: /
+
+User-agent: Facebot
+Allow: /
 
 User-agent: *
 Allow: /
