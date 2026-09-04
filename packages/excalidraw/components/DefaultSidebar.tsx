@@ -90,11 +90,9 @@ export const DefaultSidebar = Object.assign(
           name="default"
           key="default"
           className={clsx("default-sidebar", className)}
-          docked={
-            docked ?? appState?.defaultSidebarDockedPreference
-          }
+          docked={docked ?? appState?.defaultSidebarDockedPreference}
           onDock={
-            onDock === false
+            onDock === false || (!onDock && docked != null)
               ? undefined
               : composeEventHandlers(onDock, (docked) => {
                   setAppState({ defaultSidebarDockedPreference: docked });
